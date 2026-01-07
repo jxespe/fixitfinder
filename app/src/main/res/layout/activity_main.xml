@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white">
+
+    <!-- App Logo -->
+    <ImageView
+        android:id="@+id/logoImage"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:src="@drawable/logo"
+        android:contentDescription="App Logo"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="50dp"/>
+
+    <!-- Community Crafter (maroon font) -->
+    <TextView
+        android:id="@+id/tvCommunity"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Community Crafter"
+        android:textSize="36sp"
+        android:textStyle="bold"
+        android:textColor="#800000"
+        app:layout_constraintTop_toBottomOf="@+id/logoImage"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="8dp"/>
+
+    <!-- Technologies (under Community Crafter) -->
+    <TextView
+        android:id="@+id/tvTech"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Technologies"
+        android:textSize="14sp"
+        android:textStyle="italic"
+        android:textColor="@android:color/darker_gray"
+        app:layout_constraintTop_toBottomOf="@+id/tvCommunity"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="4dp"/>
+
+    <!-- App Title -->
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Welcome to FixIt Finder App"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        app:layout_constraintTop_toBottomOf="@+id/tvTech"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="30dp"/>
+
+    <!-- Subtitle -->
+    <TextView
+        android:id="@+id/tvSubtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Your Mobile Solution for Professional Service"
+        android:textSize="16sp"
+        android:textColor="@android:color/darker_gray"
+        app:layout_constraintTop_toBottomOf="@+id/tvTitle"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="10dp"/>
+
+    <!-- Login as User Button -->
+    <Button
+        android:id="@+id/btnLoginUser"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:text="Login as User"
+        android:textColor="@android:color/white"
+        android:backgroundTint="#8B0000"
+        app:layout_constraintTop_toBottomOf="@+id/tvSubtitle"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="40dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="40dp"/>
+
+    <!-- Login as Service Provider Button -->
+    <Button
+        android:id="@+id/btnLoginService"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:text="Login as Service Provider"
+        android:textColor="@android:color/white"
+        android:backgroundTint="#8B0000"
+        app:layout_constraintTop_toBottomOf="@+id/btnLoginUser"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="40dp"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
