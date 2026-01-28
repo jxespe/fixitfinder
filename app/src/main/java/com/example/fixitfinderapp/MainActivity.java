@@ -4,7 +4,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.fixitfinderapp.auth.LoginActivity;
+import com.example.fixitfinderapp.auth.ProviderLoginActivity;
 import com.google.firebase.auth.FirebaseAuth;
 
 public class MainActivity extends AppCompatActivity {
@@ -20,17 +22,17 @@ public class MainActivity extends AppCompatActivity {
 
         Button btnLoginUser = findViewById(R.id.btnLoginUser);
         Button btnLoginService = findViewById(R.id.btnLoginService);
+        android.widget.TextView tvTitle = findViewById(R.id.tvTitle);
 
-        btnLoginUser.setOnClickListener(v -> {
-            Intent i = new Intent(this, LoginActivity.class);
-            i.putExtra("role", "user");
-            startActivity(i);
-        });
+        btnLoginUser.setOnClickListener(v ->
+                startActivity(new Intent(this, LoginActivity.class)));
 
-        btnLoginService.setOnClickListener(v -> {
-            Intent i = new Intent(this, LoginActivity.class);
-            i.putExtra("role", "provider");
-            startActivity(i);
+        btnLoginService.setOnClickListener(v ->
+                startActivity(new Intent(this, ProviderLoginActivity.class)));
+
+        tvTitle.setOnLongClickListener(v -> {
+            startActivity(new Intent(this, TestMenuActivity.class));
+            return true;
         });
     }
 
@@ -38,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         if (auth.getCurrentUser() != null) {
-            startActivity(new Intent(this, DashboardActivity.class));
+            startActivity(new Intent(this, UserDashboardActivity.class));
             finish();
         }
     }

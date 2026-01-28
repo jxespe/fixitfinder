@@ -2,10 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Internet for Firebase & Maps -->
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- Location permissions for provider tracking -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
@@ -21,22 +18,19 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
-        <!-- Google Maps API Key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR_GOOGLE_MAPS_API_KEY" />
-
-        <!-- MAIN / HOME -->
+            android:value="AIzaSyDTHn9kjsiN9F44H8H1Xrn8y2p3IcVJSOI" />
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- AUTH -->
         <activity
             android:name=".auth.LoginActivity"
             android:exported="false" />
@@ -45,21 +39,53 @@
             android:name=".auth.RegisterActivity"
             android:exported="false" />
 
-        <!-- SERVICES -->
+        <activity
+            android:name=".auth.ProviderLoginActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".auth.ProviderRegisterActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".auth.OtpActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".UserDashboardActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".DashboardActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".UserSettingsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".PrivacyReportActivity"
+            android:exported="false" />
+
         <activity
             android:name=".ServiceListActivity"
             android:exported="false" />
 
-        <!-- PROVIDER MAP -->
         <activity
             android:name=".maps.MapsActivity"
             android:exported="false" />
 
-        <!-- PAYMENT -->
         <activity
             android:name=".payment.PaymentActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".TestMenuActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".PreviewActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

@@ -11,7 +11,7 @@
         android:id="@+id/logoImage"
         android:layout_width="200dp"
         android:layout_height="200dp"
-        android:src="@drawable/logo"
+        android:src="@drawable/fixitfinder"
         android:contentDescription="App Logo"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
@@ -26,7 +26,7 @@
         android:text="Community Crafter"
         android:textSize="36sp"
         android:textStyle="bold"
-        android:textColor="#800000"
+        android:textColor="@color/color_primary"
         app:layout_constraintTop_toBottomOf="@+id/logoImage"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
@@ -80,7 +80,7 @@
         android:layout_height="50dp"
         android:text="Login as User"
         android:textColor="@android:color/white"
-        android:backgroundTint="#8B0000"
+        android:backgroundTint="@color/color_primary"
         app:layout_constraintTop_toBottomOf="@+id/tvSubtitle"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
@@ -95,7 +95,7 @@
         android:layout_height="50dp"
         android:text="Login as Service Provider"
         android:textColor="@android:color/white"
-        android:backgroundTint="#8B0000"
+        android:backgroundTint="@color/color_primary"
         app:layout_constraintTop_toBottomOf="@+id/btnLoginUser"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
@@ -104,3 +104,4 @@
         android:layout_marginEnd="40dp"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "877527717686",
+    "project_id": "fixitfinder",
+    "storage_bucket": "fixitfinder.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:877527717686:android:d0c27bfdbed0a5ca16c597",
+        "android_client_info": {
+          "package_name": "com.example.fixitfinderapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDTHn9kjsiN9F44H8H1Xrn8y2p3IcVJSOI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,8 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.FixItFinderApp" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/color_primary</item>
+        <item name="colorSecondary">@color/color_secondary</item>
+        <item name="colorSurface">@color/color_background</item>
+        <item name="colorOnSurface">@color/color_text_dark</item>
+        <item name="colorPrimaryContainer">@color/color_primary</item>
+        <item name="colorOnPrimary">@color/color_background</item>
     </style>
 
     <style name="Theme.FixItFinderApp" parent="Base.Theme.FixItFinderApp" />

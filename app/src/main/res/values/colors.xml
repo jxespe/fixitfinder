@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Core palette -->
+    <color name="color_primary">#7B1113</color>
+    <color name="color_secondary">#825037</color>
+    <color name="color_background">#FFFFFF</color>
+    <color name="color_text_dark">#2C2C2C</color>
+
+    <!-- Legacy names -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="primary_red">#7B1113</color>
+    <color name="light_gray">#F5F5F5</color>
+    <color name="text_gray">#757575</color>
 </resources>
