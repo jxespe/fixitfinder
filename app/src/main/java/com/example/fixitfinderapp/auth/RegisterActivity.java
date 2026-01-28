@@ -8,7 +8,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ImageButton;
+import android.widget.Spinner;
 import android.widget.Toast;
+import android.util.Log;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.fixitfinderapp.R;
@@ -27,15 +29,18 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.auth.OAuthProvider;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class RegisterActivity extends AppCompatActivity {
 
     private static final int RC_GOOGLE_SIGN_IN = 9001;
+    private static final String TAG = "RegisterActivity";
 
     private FirebaseAuth auth;
     private FirebaseFirestore db;
@@ -45,9 +50,12 @@ public class RegisterActivity extends AppCompatActivity {
     private EditText edtAddress;
     private Button btnRegister;
     private Button btnGoogle;
+    private Button btnFacebook;
+    private Button btnAppleId;
     private ImageView btnPasswordToggle;
     private boolean isPasswordVisible = false;
     private GoogleSignInClient googleSignInClient;
+    private Spinner spinnerCountryCode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,8 +71,9 @@ public class RegisterActivity extends AppCompatActivity {
         edtPassword = findViewById(R.id.edtPassword);
         btnRegister = findViewById(R.id.btnRegister);
         btnGoogle = findViewById(R.id.btnGoogle);
-        Button btnFacebook = findViewById(R.id.btnFacebook);
-        Button btnAppleId = findViewById(R.id.btnAppleId);
+        btnFacebook = findViewById(R.id.btnFacebook);
+        btnAppleId = findViewById(R.id.btnAppleId);
+        spinnerCountryCode = findViewById(R.id.spinnerCountryCode);
         ImageButton btnBack = findViewById(R.id.btnBack);
 
         btnBack.setOnClickListener(v -> finish());
@@ -87,7 +96,7 @@ public class RegisterActivity extends AppCompatActivity {
         }
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(getString(R.string.default_web_client_id))
+                .requestIdToken(getString(R.string.google_web_client_id))
                 .requestEmail()
                 .build();
         googleSignInClient = GoogleSignIn.getClient(this, gso);
@@ -96,17 +105,15 @@ public class RegisterActivity extends AppCompatActivity {
             btnGoogle.setOnClickListener(v -> startGoogleSignIn());
         }
         if (btnFacebook != null) {
-            btnFacebook.setOnClickListener(v ->
-                    Toast.makeText(this, "Facebook login coming soon", Toast.LENGTH_SHORT).show());
+            btnFacebook.setOnClickListener(v -> startOAuthProviderSignIn("facebook.com"));
         }
         if (btnAppleId != null) {
-            btnAppleId.setOnClickListener(v ->
-                    Toast.makeText(this, "Apple ID login coming soon", Toast.LENGTH_SHORT).show());
+            btnAppleId.setOnClickListener(v -> startOAuthProviderSignIn("apple.com"));
         }
 
         btnRegister.setOnClickListener(v -> {
             String email = edtEmail.getText().toString().trim();
-            String phone = edtPhone.getText().toString().trim();
+            String phone = buildPhoneNumber();
             String address = edtAddress.getText().toString().trim();
             String password = edtPassword.getText().toString().trim();
 
@@ -125,12 +132,6 @@ public class RegisterActivity extends AppCompatActivity {
 
             if (TextUtils.isEmpty(phone)) {
                 edtPhone.setError("Phone number is required");
-                edtPhone.requestFocus();
-                return;
-            }
-
-            if (!phone.startsWith("+")) {
-                edtPhone.setError("Use international format, e.g. +63 9xx xxx xxxx");
                 edtPhone.requestFocus();
                 return;
             }
@@ -248,6 +249,32 @@ public class RegisterActivity extends AppCompatActivity {
         return password.length() >= 8 && hasLetter && hasDigit;
     }
 
+    private String buildPhoneNumber() {
+        String local = edtPhone != null ? edtPhone.getText().toString().trim() : "";
+        if (TextUtils.isEmpty(local)) {
+            if (edtPhone != null) {
+                edtPhone.setError("Phone number is required");
+                edtPhone.requestFocus();
+            }
+            return "";
+        }
+        String stripped = local.replaceAll("\\s+", "");
+        if (stripped.startsWith("0")) {
+            stripped = stripped.substring(1);
+        }
+        if (stripped.startsWith("+")) {
+            stripped = stripped.substring(1);
+        }
+        String code = "+63";
+        if (spinnerCountryCode != null && spinnerCountryCode.getSelectedItem() != null) {
+            String selected = spinnerCountryCode.getSelectedItem().toString().trim();
+            if (!TextUtils.isEmpty(selected)) {
+                code = selected;
+            }
+        }
+        return code + stripped;
+    }
+
     private void startGoogleSignIn() {
         Intent signInIntent = googleSignInClient.getSignInIntent();
         startActivityForResult(signInIntent, RC_GOOGLE_SIGN_IN);
@@ -301,24 +328,104 @@ public class RegisterActivity extends AppCompatActivity {
 
         Map<String, Object> userData = new HashMap<>();
         userData.put("uid", user.getUid());
-        userData.put("email", email);
-        userData.put("fullName", displayName);
-        userData.put("firstName", firstName);
+        userData.put("email", !TextUtils.isEmpty(email) ? email : "");
+        userData.put("fullName", !TextUtils.isEmpty(displayName) ? displayName : "");
+        userData.put("firstName", !TextUtils.isEmpty(firstName) ? firstName : "");
         userData.put("role", "user");
         userData.put("phoneVerified", false);
         userData.put("createdAt", System.currentTimeMillis());
+        userData.put("authProvider", "google.com");
+        userData.put("phone", "");
+        userData.put("address", "");
 
         db.collection("users")
                 .document(user.getUid())
                 .set(userData, SetOptions.merge())
                 .addOnSuccessListener(unused -> {
                     Toast.makeText(this, "Signed in with Google!", Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(this, com.example.fixitfinderapp.UserDashboardActivity.class);
+                    Intent intent = new Intent(this, OtpActivity.class);
+                    intent.putExtra("role", "user");
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                 })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Signed in, but profile save failed: " + e.getMessage(),
-                                Toast.LENGTH_LONG).show());
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Google profile save failed", e);
+                    Toast.makeText(this, "Signed in, but profile save failed: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                });
+    }
+
+    private void startOAuthProviderSignIn(String providerId) {
+        OAuthProvider.Builder provider = OAuthProvider.newBuilder(providerId);
+        if ("apple.com".equals(providerId)) {
+            provider.setScopes(Arrays.asList("email", "name"));
+        }
+
+        Task<AuthResult> pendingResultTask = auth.getPendingAuthResult();
+        if (pendingResultTask != null) {
+            pendingResultTask
+                    .addOnSuccessListener(result -> handleOAuthResult(result, providerId))
+                    .addOnFailureListener(e -> showOAuthError(providerId, e));
+            return;
+        }
+
+        auth.startActivityForSignInWithProvider(this, provider.build())
+                .addOnSuccessListener(result -> handleOAuthResult(result, providerId))
+                .addOnFailureListener(e -> showOAuthError(providerId, e));
+    }
+
+    private void handleOAuthResult(AuthResult result, String providerId) {
+        FirebaseUser user = result.getUser();
+        if (user == null) {
+            user = auth.getCurrentUser();
+        }
+        if (user == null) {
+            Toast.makeText(this, "OAuth sign-in failed", Toast.LENGTH_LONG).show();
+            return;
+        }
+        saveOAuthUserProfile(user, providerId);
+    }
+
+    private void showOAuthError(String providerId, Exception e) {
+        String providerLabel = providerId.replace(".com", "").replace(".", " ");
+        String errorMessage = "Sign-in failed for " + providerLabel;
+        if (e != null && e.getMessage() != null) {
+            errorMessage = errorMessage + ": " + e.getMessage();
+        }
+        Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+    }
+
+    private void saveOAuthUserProfile(FirebaseUser user, String providerId) {
+        String email = user.getEmail();
+        String displayName = user.getDisplayName();
+
+        Map<String, Object> userData = new HashMap<>();
+        userData.put("uid", user.getUid());
+        userData.put("email", !TextUtils.isEmpty(email) ? email : "");
+        userData.put("fullName", !TextUtils.isEmpty(displayName) ? displayName : "");
+        String[] parts = !TextUtils.isEmpty(displayName) ? displayName.trim().split("\\s+") : new String[0];
+        userData.put("firstName", parts.length > 0 ? parts[0] : "");
+        userData.put("role", "user");
+        userData.put("phoneVerified", false);
+        userData.put("createdAt", System.currentTimeMillis());
+        userData.put("authProvider", providerId);
+        userData.put("phone", "");
+        userData.put("address", "");
+
+        db.collection("users")
+                .document(user.getUid())
+                .set(userData, SetOptions.merge())
+                .addOnSuccessListener(unused -> {
+                    Toast.makeText(this, "Signed in!", Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(this, OtpActivity.class);
+                    intent.putExtra("role", "user");
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "OAuth profile save failed: " + providerId, e);
+                    Toast.makeText(this, "Signed in, but profile save failed: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                });
     }
 }

@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.fixitfinderapp.DashboardActivity;
 import com.example.fixitfinderapp.R;
 import com.example.fixitfinderapp.UserDashboardActivity;
+import com.example.fixitfinderapp.auth.OtpActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -78,12 +79,7 @@ public class LoginActivity extends AppCompatActivity {
 
                         if (task.isSuccessful()) {
                             Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
-                            if ("provider".equalsIgnoreCase(role)) {
-                                goToProviderDashboard();
-                            } else {
-                                goToUserDashboard();
-                            }
-                            finish();
+                            routeAfterLogin(role);
                         } else {
                             String errorMessage = "Login failed. Please check your credentials.";
                             if (task.getException() != null) {
@@ -112,18 +108,45 @@ public class LoginActivity extends AppCompatActivity {
         if (user == null) {
             return;
         }
+        routeAfterLogin("user");
+    }
+
+    private void routeAfterLogin(String fallbackRole) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) {
+            return;
+        }
         db.collection("users")
                 .document(user.getUid())
                 .get()
                 .addOnSuccessListener(doc -> {
                     String role = doc.getString("role");
-                    if ("provider".equalsIgnoreCase(role)) {
+                    Boolean phoneVerified = doc.getBoolean("phoneVerified");
+                    String phone = doc.getString("phone");
+                    boolean verified = phoneVerified != null && phoneVerified;
+                    String resolvedRole = role != null ? role : fallbackRole;
+                    if (!verified) {
+                        goToOtp(phone, resolvedRole);
+                        return;
+                    }
+                    if ("provider".equalsIgnoreCase(resolvedRole)) {
                         goToProviderDashboard();
                     } else {
                         goToUserDashboard();
                     }
                 })
-                .addOnFailureListener(e -> goToUserDashboard());
+                .addOnFailureListener(e -> goToOtp(null, fallbackRole));
+    }
+
+    private void goToOtp(String phone, String role) {
+        Intent intent = new Intent(this, OtpActivity.class);
+        if (phone != null) {
+            intent.putExtra("phone", phone);
+        }
+        intent.putExtra("role", role);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     private void goToUserDashboard() {
