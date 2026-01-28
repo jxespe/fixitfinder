@@ -12,7 +12,20 @@
           "package_name": "com.example.fixitfinderapp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "877527717686-d73apeus69tc4n7o928h4j1scp40a4ad.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.fixitfinderapp",
+            "certificate_hash": "999dbcc24208aa0c780d947d0fa9553b7bfb854d"
+          }
+        },
+        {
+          "client_id": "877527717686-n8okqsj8tic4tnke1ebpipdrfdb09337.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDTHn9kjsiN9F44H8H1Xrn8y2p3IcVJSOI"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "877527717686-n8okqsj8tic4tnke1ebpipdrfdb09337.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

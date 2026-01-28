@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/white"
+    android:padding="16dp"
+    android:layout_marginBottom="8dp"
+    android:elevation="2dp">
+
+    <ImageView
+        android:id="@+id/ivProviderLogo"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:scaleType="centerCrop"
+        android:background="#E0E0E0"
+        android:contentDescription="Provider Logo"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/tvProviderName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="JobsWright Aircon Services"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:layout_marginStart="12dp"
+        app:layout_constraintTop_toTopOf="@+id/ivProviderLogo"
+        app:layout_constraintStart_toEndOf="@+id/ivProviderLogo"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/tvBookingDate"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="February 14, 2024"
+        android:textSize="14sp"
+        android:textColor="#757575"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="4dp"
+        app:layout_constraintTop_toBottomOf="@+id/tvProviderName"
+        app:layout_constraintStart_toEndOf="@+id/ivProviderLogo"
+        app:layout_constraintEnd_toStartOf="@+id/tvStatus" />
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Pending"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="#FF9800"
+        android:layout_marginEnd="8dp"
+        app:layout_constraintTop_toTopOf="@+id/tvBookingDate"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/tvPayment"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="On-hold"
+        android:textSize="12sp"
+        android:textColor="#FF9800"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="4dp"
+        app:layout_constraintTop_toBottomOf="@+id/tvBookingDate"
+        app:layout_constraintStart_toEndOf="@+id/ivProviderLogo" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

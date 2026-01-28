@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Header -->
+            <RelativeLayout
+                android:id="@+id/layoutHeader"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/color_primary"
+                android:padding="16dp">
+
+                <ImageView
+                    android:id="@+id/btnBack"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@android:drawable/ic_media_previous"
+                    android:contentDescription="Back"
+                    android:tint="@color/white" />
+
+                <TextView
+                    android:id="@+id/tvHeaderTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="App Settings"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white"
+                    android:layout_toEndOf="@+id/btnBack"
+                    android:layout_marginStart="12dp"
+                    android:layout_centerVertical="true" />
+            </RelativeLayout>
+
+            <!-- Profile section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Profile"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#6B6B6B"
+                android:background="#F1F1F1"
+                android:padding="12dp" />
+
+            <LinearLayout
+                android:id="@+id/rowProfileInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="14dp"
+                android:background="@android:color/white">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@android:drawable/ic_menu_myplaces"
+                    android:tint="#6B6B6B"
+                    android:contentDescription="Profile Icon" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Profile info"
+                    android:textSize="14sp"
+                    android:layout_marginStart="12dp" />
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@android:drawable/ic_media_next"
+                    android:tint="#6B6B6B"
+                    android:contentDescription="Chevron" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E6E6E6" />
+
+            <!-- General section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="General"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#6B6B6B"
+                android:background="#F1F1F1"
+                android:padding="12dp" />
+
+            <LinearLayout
+                android:id="@+id/rowPaymentMethods"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="14dp"
+                android:background="@android:color/white">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@android:drawable/ic_menu_agenda"
+                    android:tint="#6B6B6B"
+                    android:contentDescription="Payment Icon" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Payment Methods"
+                    android:textSize="14sp"
+                    android:layout_marginStart="12dp" />
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@android:drawable/ic_media_next"
+                    android:tint="#6B6B6B"
+                    android:contentDescription="Chevron" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E6E6E6" />
+
+            <!-- About section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="About"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#6B6B6B"
+                android:background="#F1F1F1"
+                android:padding="12dp" />
+
+            <LinearLayout
+                android:id="@+id/rowPrivacySecurity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="14dp"
+                android:background="#D9D9D9">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@android:drawable/ic_dialog_info"
+                    android:tint="#6B6B6B"
+                    android:contentDescription="Privacy Icon" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Privacy and Security"
+                    android:textSize="14sp"
+                    android:layout_marginStart="12dp" />
+
+                <ImageView
+                    android:id="@+id/ivPrivacyChevron"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@android:drawable/arrow_down_float"
+                    android:tint="#6B6B6B"
+                    android:contentDescription="Chevron" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutPrivacyDetails"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="14dp"
+                android:background="@android:color/white">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Location Distance"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/black" />
+
+                <Switch
+                    android:id="@+id/switchLocationDistance"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:thumbTint="@color/color_primary"
+                    android:trackTint="#E0E0E0" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E6E6E6" />
+
+            <LinearLayout
+                android:id="@+id/rowBugReport"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="14dp"
+                android:background="@android:color/white">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@android:drawable/ic_dialog_info"
+                    android:tint="#6B6B6B"
+                    android:contentDescription="Bug Icon" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Bug Report"
+                    android:textSize="14sp"
+                    android:layout_marginStart="12dp" />
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@android:drawable/ic_media_next"
+                    android:tint="#6B6B6B"
+                    android:contentDescription="Chevron" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E6E6E6" />
+
+            <LinearLayout
+                android:id="@+id/rowFacebook"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="14dp"
+                android:background="@android:color/white">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@android:drawable/ic_menu_share"
+                    android:tint="#6B6B6B"
+                    android:contentDescription="Facebook Icon" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="www.Facebook.com/FixItFinder"
+                    android:textSize="14sp"
+                    android:layout_marginStart="12dp" />
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@android:drawable/ic_media_next"
+                    android:tint="#6B6B6B"
+                    android:contentDescription="Chevron" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E6E6E6" />
+
+            <!-- Clear cache -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Clear cache"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#6B6B6B"
+                android:background="#F1F1F1"
+                android:padding="12dp" />
+
+            <LinearLayout
+                android:id="@+id/rowClearCache"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="14dp"
+                android:background="@android:color/white">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text=""
+                    android:textSize="14sp" />
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@android:drawable/ic_media_next"
+                    android:tint="#6B6B6B"
+                    android:contentDescription="Chevron" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E6E6E6" />
+
+            <!-- Log Out -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Log Out"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#6B6B6B"
+                android:background="#F1F1F1"
+                android:padding="12dp" />
+
+            <LinearLayout
+                android:id="@+id/rowLogout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="14dp"
+                android:background="@android:color/white">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text=""
+                    android:textSize="14sp" />
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@android:drawable/ic_media_next"
+                    android:tint="#6B6B6B"
+                    android:contentDescription="Chevron" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Bottom Navigation -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@color/white"
+        app:itemTextColor="@color/color_primary"
+        app:itemIconTint="@color/color_primary"
+        app:menu="@menu/bottom_navigation" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
+
