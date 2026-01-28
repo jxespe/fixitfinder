@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">FixItFinderApp</string>
+    <string name="google_web_client_id">877527717686-n8okqsj8tic4tnke1ebpipdrfdb09337.apps.googleusercontent.com</string>
+    <string-array name="country_codes">
+        <item>+63</item>
+    </string-array>
 </resources>
