@@ -4,4 +4,15 @@
     <string-array name="country_codes">
         <item>+63</item>
     </string-array>
+    <string-array name="service_categories">
+        <item>Select service category</item>
+        <item>Carpentry</item>
+        <item>Plumbing</item>
+        <item>Aircon Repairs</item>
+        <item>Car Mechanic</item>
+        <item>Appliance Repair</item>
+        <item>Electrical Repair</item>
+        <item>Electronics Repair</item>
+        <item>Internet Technician</item>
+    </string-array>
 </resources>

@@ -32,6 +32,8 @@ public class UserDashboardActivity extends AppCompatActivity {
         TextView tvGreeting = findViewById(R.id.tvGreeting);
         setGreeting(tvGreeting);
 
+        wireCategoryCards();
+
         // Bottom navigation – wire basic tabs; real screens can be added later
         BottomNavigationView bottomNavigation = findViewById(R.id.bottomNavigation);
         bottomNavigation.setOnItemSelectedListener(item -> {
@@ -40,7 +42,7 @@ public class UserDashboardActivity extends AppCompatActivity {
                 // Already on home; no-op
                 return true;
             } else if (id == R.id.nav_history) {
-                Toast.makeText(this, "History coming soon", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, HistoryActivity.class));
                 return true;
             } else if (id == R.id.nav_messages) {
                 Toast.makeText(this, "Messages coming soon", Toast.LENGTH_SHORT).show();
@@ -51,6 +53,31 @@ public class UserDashboardActivity extends AppCompatActivity {
             }
             return false;
         });
+    }
+
+    private void wireCategoryCards() {
+        findViewById(R.id.cardCarpentry)
+                .setOnClickListener(v -> openCategory("Carpentry"));
+        findViewById(R.id.cardPlumbing)
+                .setOnClickListener(v -> openCategory("Plumbing"));
+        findViewById(R.id.cardAirconRepairs)
+                .setOnClickListener(v -> openCategory("Aircon Repairs"));
+        findViewById(R.id.cardCarMechanic)
+                .setOnClickListener(v -> openCategory("Car Mechanic"));
+        findViewById(R.id.cardApplianceRepair)
+                .setOnClickListener(v -> openCategory("Appliance Repair"));
+        findViewById(R.id.cardElectricalRepair)
+                .setOnClickListener(v -> openCategory("Electrical Repair"));
+        findViewById(R.id.cardElectronicsRepair)
+                .setOnClickListener(v -> openCategory("Electronics Repair"));
+        findViewById(R.id.cardInternetTechnician)
+                .setOnClickListener(v -> openCategory("Internet Technician"));
+    }
+
+    private void openCategory(String name) {
+        Intent intent = new Intent(this, ServiceCategoryActivity.class);
+        intent.putExtra(ServiceCategoryActivity.EXTRA_CATEGORY_NAME, name);
+        startActivity(intent);
     }
 
     private void setGreeting(TextView tvGreeting) {

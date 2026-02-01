@@ -7,6 +7,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import android.content.SharedPreferences;
 
 import com.example.fixitfinderapp.DashboardActivity;
 import com.example.fixitfinderapp.R;
@@ -40,6 +41,13 @@ public class LoginActivity extends AppCompatActivity {
             String email = intent.getStringExtra("email");
             if (email != null) {
                 edtEmail.setText(email);
+            }
+        }
+        if (TextUtils.isEmpty(edtEmail.getText())) {
+            SharedPreferences prefs = getSharedPreferences("auth_prefs", MODE_PRIVATE);
+            String lastOAuthEmail = prefs.getString("last_oauth_email", "");
+            if (!TextUtils.isEmpty(lastOAuthEmail)) {
+                edtEmail.setText(lastOAuthEmail);
             }
         }
 
@@ -78,7 +86,6 @@ public class LoginActivity extends AppCompatActivity {
                         btnLogin.setText("Login");
 
                         if (task.isSuccessful()) {
-                            Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
                             routeAfterLogin(role);
                         } else {
                             String errorMessage = "Login failed. Please check your credentials.";
@@ -120,15 +127,29 @@ public class LoginActivity extends AppCompatActivity {
                 .document(user.getUid())
                 .get()
                 .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) {
+                        FirebaseAuth.getInstance().signOut();
+                        Toast.makeText(this, "Wrong login credentials",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     String role = doc.getString("role");
                     Boolean phoneVerified = doc.getBoolean("phoneVerified");
                     String phone = doc.getString("phone");
                     boolean verified = phoneVerified != null && phoneVerified;
                     String resolvedRole = role != null ? role : fallbackRole;
+                    if ("provider".equalsIgnoreCase(resolvedRole)) {
+                        FirebaseAuth.getInstance().signOut();
+                        Toast.makeText(this, "Wrong login credentials",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     if (!verified) {
                         goToOtp(phone, resolvedRole);
                         return;
                     }
+                    com.example.fixitfinderapp.SessionManager.saveRole(this, resolvedRole);
+                    Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
                     if ("provider".equalsIgnoreCase(resolvedRole)) {
                         goToProviderDashboard();
                     } else {

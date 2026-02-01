@@ -85,7 +85,6 @@ public class ProviderLoginActivity extends AppCompatActivity {
                         btnLogin.setText("Login");
 
                         if (task.isSuccessful()) {
-                            Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
                             routeAfterLogin();
                         } else {
                             String errorMessage = "Login failed. Please check your credentials.";
@@ -123,19 +122,26 @@ public class ProviderLoginActivity extends AppCompatActivity {
         if (user == null) {
             return;
         }
-        db.collection("users")
+        db.collection("providers")
                 .document(user.getUid())
                 .get()
                 .addOnSuccessListener(doc -> {
-                    String role = doc.getString("role");
+                    if (!doc.exists()) {
+                        FirebaseAuth.getInstance().signOut();
+                        Toast.makeText(this, "Wrong login credentials",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     Boolean phoneVerified = doc.getBoolean("phoneVerified");
                     String phone = doc.getString("phone");
                     boolean verified = phoneVerified != null && phoneVerified;
-                    String resolvedRole = role != null ? role : "provider";
+                    String resolvedRole = "provider";
                     if (!verified) {
                         goToOtp(phone, resolvedRole);
                         return;
                     }
+                    com.example.fixitfinderapp.SessionManager.saveRole(this, resolvedRole);
+                    Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
                     if ("provider".equalsIgnoreCase(resolvedRole)) {
                         goToProviderDashboard();
                     } else {

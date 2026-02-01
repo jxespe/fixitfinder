@@ -35,6 +35,7 @@
                 android:layout_marginEnd="16dp" />
 
             <TextView
+                android:id="@+id/tvHeaderTitle"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -44,38 +45,106 @@
                 android:textColor="@color/white" />
         </LinearLayout>
 
-        <!-- Tabs -->
-        <LinearLayout
-            android:id="@+id/tabLayout"
+        <!-- Filters -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupFilters"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:background="@color/white"
             android:layout_marginTop="8dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            app:singleSelection="true"
+            app:selectionRequired="true"
             app:layout_constraintTop_toBottomOf="@+id/headerLayout"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
-            <Button
-                android:id="@+id/btnHistory"
-                android:layout_width="0dp"
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipAll"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="History"
-                android:textColor="@color/white"
-                android:backgroundTint="@color/color_primary"
-                android:padding="12dp" />
+                android:text="All"
+                android:tag="all"
+                android:checked="true"
+                app:chipBackgroundColor="@color/light_gray"
+                app:chipStrokeColor="@color/color_primary"
+                app:chipStrokeWidth="1dp"
+                app:checkedIconVisible="false"
+                app:chipCornerRadius="16dp"
+                />
 
-            <Button
-                android:id="@+id/btnReviews"
-                android:layout_width="0dp"
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipPending"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Reviews"
-                android:textColor="@color/color_background"
-                android:background="@drawable/button_outline_primary"
-                android:padding="12dp" />
-        </LinearLayout>
+                android:text="Pending"
+                android:tag="pending"
+                app:chipBackgroundColor="@color/light_gray"
+                app:chipStrokeColor="@color/color_primary"
+                app:chipStrokeWidth="1dp"
+                app:checkedIconVisible="false"
+                app:chipCornerRadius="16dp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipOnProcess"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="On Process"
+                android:tag="on_process"
+                app:chipBackgroundColor="@color/light_gray"
+                app:chipStrokeColor="@color/color_primary"
+                app:chipStrokeWidth="1dp"
+                app:checkedIconVisible="false"
+                app:chipCornerRadius="16dp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFinished"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Finished"
+                android:tag="finished"
+                app:chipBackgroundColor="@color/light_gray"
+                app:chipStrokeColor="@color/color_primary"
+                app:chipStrokeWidth="1dp"
+                app:checkedIconVisible="false"
+                app:chipCornerRadius="16dp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipCancelled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cancelled"
+                android:tag="cancelled"
+                app:chipBackgroundColor="@color/light_gray"
+                app:chipStrokeColor="@color/color_primary"
+                app:chipStrokeWidth="1dp"
+                app:checkedIconVisible="false"
+                app:chipCornerRadius="16dp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipDeclined"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Declined"
+                android:tag="declined"
+                app:chipBackgroundColor="@color/light_gray"
+                app:chipStrokeColor="@color/color_primary"
+                app:chipStrokeWidth="1dp"
+                app:checkedIconVisible="false"
+                app:chipCornerRadius="16dp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipRescheduled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rescheduled"
+                android:tag="rescheduled"
+                app:chipBackgroundColor="@color/light_gray"
+                app:chipStrokeColor="@color/color_primary"
+                app:chipStrokeWidth="1dp"
+                app:checkedIconVisible="false"
+                app:chipCornerRadius="16dp" />
+        </com.google.android.material.chip.ChipGroup>
 
         <!-- History List -->
         <androidx.recyclerview.widget.RecyclerView
@@ -84,8 +153,21 @@
             android:layout_height="0dp"
             android:padding="16dp"
             android:clipToPadding="false"
-            app:layout_constraintTop_toBottomOf="@+id/tabLayout"
+            app:layout_constraintTop_toBottomOf="@+id/chipGroupFilters"
             app:layout_constraintBottom_toTopOf="@+id/bottomNavigation"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <TextView
+            android:id="@+id/tvEmptyHistory"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="No bookings yet."
+            android:textColor="#757575"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@+id/chipGroupFilters"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 

@@ -9,17 +9,17 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.fixitfinderapp.auth.LoginActivity;
+import com.example.fixitfinderapp.auth.ProviderLoginActivity;
 import com.example.fixitfinderapp.payment.PaymentActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 
-public class UserSettingsActivity extends AppCompatActivity {
+public class ProviderSettingsActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_user_settings);
+        setContentView(R.layout.activity_provider_settings);
 
         ImageView btnBack = findViewById(R.id.btnBack);
         btnBack.setOnClickListener(v -> finish());
@@ -33,7 +33,7 @@ public class UserSettingsActivity extends AppCompatActivity {
         LinearLayout rowLogout = findViewById(R.id.rowLogout);
 
         rowProfileInfo.setOnClickListener(v ->
-                Toast.makeText(this, "Profile info coming soon", Toast.LENGTH_SHORT).show());
+                startActivity(new Intent(this, ProviderProfileActivity.class)));
 
         rowPaymentMethods.setOnClickListener(v ->
                 startActivity(new Intent(this, PaymentActivity.class)));
@@ -42,7 +42,7 @@ public class UserSettingsActivity extends AppCompatActivity {
                 startActivity(new Intent(this, PrivacyReportActivity.class)));
 
         rowBugReport.setOnClickListener(v ->
-                startActivity(new Intent(this, PrivacyReportActivity.class)));
+                Toast.makeText(this, "Bug report coming soon", Toast.LENGTH_SHORT).show());
 
         rowFacebook.setOnClickListener(v -> {
             Intent browserIntent = new Intent(Intent.ACTION_VIEW,
@@ -56,7 +56,7 @@ public class UserSettingsActivity extends AppCompatActivity {
         rowLogout.setOnClickListener(v -> {
             FirebaseAuth.getInstance().signOut();
             SessionManager.clear(this);
-            startActivity(new Intent(this, LoginActivity.class));
+            startActivity(new Intent(this, ProviderLoginActivity.class));
             finish();
         });
 
@@ -65,11 +65,11 @@ public class UserSettingsActivity extends AppCompatActivity {
         bottomNavigation.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_home) {
-                startActivity(new Intent(this, UserDashboardActivity.class));
+                startActivity(new Intent(this, DashboardActivity.class));
                 finish();
                 return true;
             } else if (id == R.id.nav_history) {
-                startActivity(new Intent(this, HistoryActivity.class));
+                startActivity(new Intent(this, ProviderHistoryActivity.class));
                 finish();
                 return true;
             } else if (id == R.id.nav_messages) {
@@ -81,5 +81,4 @@ public class UserSettingsActivity extends AppCompatActivity {
             return false;
         });
     }
-
 }

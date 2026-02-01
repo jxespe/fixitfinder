@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.text.method.PasswordTransformationMethod;
+import android.text.TextWatcher;
+import android.text.Editable;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -11,6 +13,7 @@ import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.Toast;
 import android.util.Log;
+import android.content.SharedPreferences;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.fixitfinderapp.R;
@@ -56,6 +59,7 @@ public class RegisterActivity extends AppCompatActivity {
     private boolean isPasswordVisible = false;
     private GoogleSignInClient googleSignInClient;
     private Spinner spinnerCountryCode;
+    private boolean isFormattingPhone = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,6 +81,8 @@ public class RegisterActivity extends AppCompatActivity {
         ImageButton btnBack = findViewById(R.id.btnBack);
 
         btnBack.setOnClickListener(v -> finish());
+
+        setupPhoneFormatting();
 
         // Password toggle functionality
         btnPasswordToggle = findViewById(R.id.btnPasswordToggle);
@@ -258,7 +264,7 @@ public class RegisterActivity extends AppCompatActivity {
             }
             return "";
         }
-        String stripped = local.replaceAll("\\s+", "");
+        String stripped = local.replaceAll("\\D", "");
         if (stripped.startsWith("0")) {
             stripped = stripped.substring(1);
         }
@@ -273,6 +279,58 @@ public class RegisterActivity extends AppCompatActivity {
             }
         }
         return code + stripped;
+    }
+
+    private void setupPhoneFormatting() {
+        if (edtPhone == null) {
+            return;
+        }
+        edtPhone.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) { }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (isFormattingPhone) {
+                    return;
+                }
+                isFormattingPhone = true;
+                String digits = s.toString().replaceAll("\\D", "");
+                if (digits.startsWith("0")) {
+                    digits = digits.substring(1);
+                }
+                if (digits.length() > 10) {
+                    digits = digits.substring(0, 10);
+                }
+                String formatted = formatLocalPhone(digits);
+                if (!formatted.equals(s.toString())) {
+                    edtPhone.setText(formatted);
+                    edtPhone.setSelection(formatted.length());
+                }
+                isFormattingPhone = false;
+            }
+        });
+    }
+
+    private String formatLocalPhone(String digits) {
+        if (TextUtils.isEmpty(digits)) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        int len = digits.length();
+        sb.append(digits, 0, Math.min(3, len));
+        if (len > 3) {
+            sb.append(" ");
+            sb.append(digits, 3, Math.min(6, len));
+        }
+        if (len > 6) {
+            sb.append(" ");
+            sb.append(digits, 6, len);
+        }
+        return sb.toString();
     }
 
     private void startGoogleSignIn() {
@@ -338,6 +396,8 @@ public class RegisterActivity extends AppCompatActivity {
         userData.put("phone", "");
         userData.put("address", "");
 
+        saveLastOAuthEmail(email);
+
         db.collection("users")
                 .document(user.getUid())
                 .set(userData, SetOptions.merge())
@@ -345,6 +405,7 @@ public class RegisterActivity extends AppCompatActivity {
                     Toast.makeText(this, "Signed in with Google!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(this, OtpActivity.class);
                     intent.putExtra("role", "user");
+                    intent.putExtra("oauth", true);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                 })
@@ -412,6 +473,8 @@ public class RegisterActivity extends AppCompatActivity {
         userData.put("phone", "");
         userData.put("address", "");
 
+        saveLastOAuthEmail(email);
+
         db.collection("users")
                 .document(user.getUid())
                 .set(userData, SetOptions.merge())
@@ -419,6 +482,7 @@ public class RegisterActivity extends AppCompatActivity {
                     Toast.makeText(this, "Signed in!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(this, OtpActivity.class);
                     intent.putExtra("role", "user");
+                    intent.putExtra("oauth", true);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                 })
@@ -427,5 +491,13 @@ public class RegisterActivity extends AppCompatActivity {
                     Toast.makeText(this, "Signed in, but profile save failed: " + e.getMessage(),
                             Toast.LENGTH_LONG).show();
                 });
+    }
+
+    private void saveLastOAuthEmail(String email) {
+        if (TextUtils.isEmpty(email)) {
+            return;
+        }
+        SharedPreferences prefs = getSharedPreferences("auth_prefs", MODE_PRIVATE);
+        prefs.edit().putString("last_oauth_email", email).apply();
     }
 }

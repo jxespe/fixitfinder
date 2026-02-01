@@ -3,8 +3,11 @@ package com.example.fixitfinderapp.auth;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.text.Editable;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -31,9 +34,12 @@ public class OtpActivity extends AppCompatActivity {
     private EditText edtOtp;
     private Button btnSendOtp;
     private Button btnVerifyOtp;
+    private Spinner spinnerCountryCode;
+    private boolean isFormattingPhone = false;
     private String verificationId;
     private PhoneAuthProvider.ForceResendingToken resendingToken;
     private String role = "user";
+    private boolean isOauthFlow = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,28 +53,26 @@ public class OtpActivity extends AppCompatActivity {
         edtOtp = findViewById(R.id.edtOtp);
         btnSendOtp = findViewById(R.id.btnSendOtp);
         btnVerifyOtp = findViewById(R.id.btnVerifyOtp);
+        spinnerCountryCode = findViewById(R.id.spinnerCountryCode);
+        setupPhoneFormatting();
 
         Intent intent = getIntent();
         if (intent != null) {
             String phone = intent.getStringExtra("phone");
             if (!TextUtils.isEmpty(phone)) {
-                edtPhone.setText(phone);
+                setLocalPhoneFromFull(phone);
             }
             String roleExtra = intent.getStringExtra("role");
             if (!TextUtils.isEmpty(roleExtra)) {
                 role = roleExtra;
             }
+            isOauthFlow = intent.getBooleanExtra("oauth", false);
         }
 
         btnSendOtp.setOnClickListener(v -> {
-            String phone = edtPhone.getText().toString().trim();
+            String phone = buildPhoneNumber();
             if (TextUtils.isEmpty(phone)) {
                 edtPhone.setError("Phone number is required");
-                edtPhone.requestFocus();
-                return;
-            }
-            if (!phone.startsWith("+")) {
-                edtPhone.setError("Use international format, e.g. +63 9xx xxx xxxx");
                 edtPhone.requestFocus();
                 return;
             }
@@ -159,12 +163,22 @@ public class OtpActivity extends AppCompatActivity {
     }
 
     private void markPhoneVerified(String uid) {
-        db.collection("users")
+        String collection = "user".equalsIgnoreCase(role) ? "users" : "providers";
+        db.collection(collection)
                 .document(uid)
                 .update("phoneVerified", true);
     }
 
     private void goToDashboard() {
+        if (isOauthFlow) {
+            Intent intent = new Intent(this, CreatePasswordActivity.class);
+            intent.putExtra("role", role);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+            return;
+        }
+        com.example.fixitfinderapp.SessionManager.saveRole(this, role);
         Intent intent;
         if ("provider".equalsIgnoreCase(role)) {
             intent = new Intent(this, DashboardActivity.class);
@@ -174,5 +188,111 @@ public class OtpActivity extends AppCompatActivity {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    private String buildPhoneNumber() {
+        String local = edtPhone != null ? edtPhone.getText().toString().trim() : "";
+        if (TextUtils.isEmpty(local)) {
+            return "";
+        }
+        String stripped = local.replaceAll("\\D", "");
+        if (stripped.startsWith("0")) {
+            stripped = stripped.substring(1);
+        }
+        if (stripped.startsWith("+")) {
+            stripped = stripped.substring(1);
+        }
+        String code = "+63";
+        if (spinnerCountryCode != null && spinnerCountryCode.getSelectedItem() != null) {
+            String selected = spinnerCountryCode.getSelectedItem().toString().trim();
+            if (!TextUtils.isEmpty(selected)) {
+                code = selected;
+            }
+        }
+        return code + stripped;
+    }
+
+    private void setLocalPhoneFromFull(String fullPhone) {
+        if (edtPhone == null) {
+            return;
+        }
+        String trimmed = fullPhone == null ? "" : fullPhone.trim();
+        if (TextUtils.isEmpty(trimmed)) {
+            return;
+        }
+        String withoutSpaces = trimmed.replaceAll("\\s+", "");
+        String code = "+63";
+        if (spinnerCountryCode != null && spinnerCountryCode.getSelectedItem() != null) {
+            String selected = spinnerCountryCode.getSelectedItem().toString().trim();
+            if (!TextUtils.isEmpty(selected)) {
+                code = selected;
+            }
+        }
+        if (withoutSpaces.startsWith(code)) {
+            withoutSpaces = withoutSpaces.substring(code.length());
+        }
+        if (withoutSpaces.startsWith("+")) {
+            withoutSpaces = withoutSpaces.substring(1);
+        }
+        if (withoutSpaces.startsWith("0")) {
+            withoutSpaces = withoutSpaces.substring(1);
+        }
+        String digits = withoutSpaces.replaceAll("\\D", "");
+        if (digits.length() > 10) {
+            digits = digits.substring(0, 10);
+        }
+        edtPhone.setText(formatLocalPhone(digits));
+    }
+
+    private void setupPhoneFormatting() {
+        if (edtPhone == null) {
+            return;
+        }
+        edtPhone.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) { }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (isFormattingPhone) {
+                    return;
+                }
+                isFormattingPhone = true;
+                String digits = s.toString().replaceAll("\\D", "");
+                if (digits.startsWith("0")) {
+                    digits = digits.substring(1);
+                }
+                if (digits.length() > 10) {
+                    digits = digits.substring(0, 10);
+                }
+                String formatted = formatLocalPhone(digits);
+                if (!formatted.equals(s.toString())) {
+                    edtPhone.setText(formatted);
+                    edtPhone.setSelection(formatted.length());
+                }
+                isFormattingPhone = false;
+            }
+        });
+    }
+
+    private String formatLocalPhone(String digits) {
+        if (TextUtils.isEmpty(digits)) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        int len = digits.length();
+        sb.append(digits, 0, Math.min(3, len));
+        if (len > 3) {
+            sb.append(" ");
+            sb.append(digits, 3, Math.min(6, len));
+        }
+        if (len > 6) {
+            sb.append(" ");
+            sb.append(digits, 6, len);
+        }
+        return sb.toString();
     }
 }

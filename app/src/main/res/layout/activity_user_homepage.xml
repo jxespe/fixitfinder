@@ -175,6 +175,7 @@
                 app:layout_constraintEnd_toEndOf="parent">
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardCarpentry"
                     android:layout_width="200dp"
                     android:layout_height="120dp"
                     android:layout_margin="8dp"
@@ -217,6 +218,7 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardPlumbing"
                     android:layout_width="200dp"
                     android:layout_height="120dp"
                     android:layout_margin="8dp"
@@ -259,6 +261,7 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardAirconRepairs"
                     android:layout_width="200dp"
                     android:layout_height="120dp"
                     android:layout_margin="8dp"
@@ -301,6 +304,7 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardCarMechanic"
                     android:layout_width="200dp"
                     android:layout_height="120dp"
                     android:layout_margin="8dp"
@@ -343,6 +347,7 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardApplianceRepair"
                     android:layout_width="200dp"
                     android:layout_height="120dp"
                     android:layout_margin="8dp"
@@ -385,6 +390,7 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardElectricalRepair"
                     android:layout_width="200dp"
                     android:layout_height="120dp"
                     android:layout_margin="8dp"
@@ -427,6 +433,7 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardElectronicsRepair"
                     android:layout_width="200dp"
                     android:layout_height="120dp"
                     android:layout_margin="8dp"
@@ -469,6 +476,7 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardInternetTechnician"
                     android:layout_width="200dp"
                     android:layout_height="120dp"
                     android:layout_margin="8dp"

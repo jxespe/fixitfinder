@@ -52,6 +52,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".auth.CreatePasswordActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".UserDashboardActivity"
             android:exported="false" />
 
@@ -64,7 +68,49 @@
             android:exported="false" />
 
         <activity
+            android:name=".ProviderSettingsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".HistoryActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ProviderHistoryActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".BookingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".BookingScheduleActivity"
+            android:exported="false" />
+        <activity
+            android:name=".BookingConfirmationActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ProviderJobListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ProviderEarningsListActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ProviderProfileActivity"
+            android:exported="false" />
+
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:exported="false" />
+
+        <activity
             android:name=".PrivacyReportActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ServiceCategoryActivity"
             android:exported="false" />
 
         <activity
@@ -86,6 +132,16 @@
         <activity
             android:name=".PreviewActivity"
             android:exported="false" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

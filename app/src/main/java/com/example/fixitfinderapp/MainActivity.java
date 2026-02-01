@@ -55,22 +55,59 @@ public class MainActivity extends AppCompatActivity {
                 .document(user.getUid())
                 .get()
                 .addOnSuccessListener(doc -> {
-                    String role = doc.getString("role");
+                    if (doc.exists()) {
+                        String role = doc.getString("role");
+                        Boolean phoneVerified = doc.getBoolean("phoneVerified");
+                        String phone = doc.getString("phone");
+                        boolean verified = phoneVerified != null && phoneVerified;
+                        if (!verified) {
+                            goToOtp(phone, role != null ? role : "user");
+                            return;
+                        }
+                        SessionManager.saveRole(this, role != null ? role : "user");
+                        if ("provider".equalsIgnoreCase(role)) {
+                            startActivity(new Intent(this, DashboardActivity.class));
+                        } else {
+                            startActivity(new Intent(this, UserDashboardActivity.class));
+                        }
+                        finish();
+                        return;
+                    }
+                    routeProviderAfterLogin(user);
+                })
+                .addOnFailureListener(e -> {
+                    String cachedRole = SessionManager.getRole(this);
+                    if ("provider".equalsIgnoreCase(cachedRole)) {
+                        startActivity(new Intent(this, DashboardActivity.class));
+                    } else if ("user".equalsIgnoreCase(cachedRole)) {
+                        startActivity(new Intent(this, UserDashboardActivity.class));
+                    } else {
+                        goToOtp(null, "user");
+                    }
+                    finish();
+                });
+    }
+
+    private void routeProviderAfterLogin(FirebaseUser user) {
+        db.collection("providers")
+                .document(user.getUid())
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) {
+                        return;
+                    }
                     Boolean phoneVerified = doc.getBoolean("phoneVerified");
                     String phone = doc.getString("phone");
                     boolean verified = phoneVerified != null && phoneVerified;
                     if (!verified) {
-                        goToOtp(phone, role != null ? role : "user");
+                        goToOtp(phone, "provider");
                         return;
                     }
-                    if ("provider".equalsIgnoreCase(role)) {
-                        startActivity(new Intent(this, DashboardActivity.class));
-                    } else {
-                        startActivity(new Intent(this, UserDashboardActivity.class));
-                    }
+                    SessionManager.saveRole(this, "provider");
+                    startActivity(new Intent(this, DashboardActivity.class));
                     finish();
                 })
-                .addOnFailureListener(e -> goToOtp(null, "user"));
+                .addOnFailureListener(e -> goToOtp(null, "provider"));
     }
 
     private void goToOtp(String phone, String role) {
