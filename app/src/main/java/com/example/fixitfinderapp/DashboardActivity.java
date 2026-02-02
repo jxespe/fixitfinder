@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.graphics.Typeface;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -16,8 +17,16 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 
 public class DashboardActivity extends AppCompatActivity {
+
+    private TextView tvNewServicesTitle;
+    private TextView tvNewServicesCount;
+    private TextView tvUpcomingServicesTitle;
+    private TextView tvUpcomingServicesCount;
+    private int pendingCount = 0;
+    private int upcomingCount = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +44,10 @@ public class DashboardActivity extends AppCompatActivity {
         TextView tvAvgResponseTime = findViewById(R.id.tvAvgResponseTime);
         Button btnServiceStatus = findViewById(R.id.btnServiceStatus);
         Button btnEditServices = findViewById(R.id.btnEditServices);
+        tvNewServicesTitle = findViewById(R.id.tvNewServicesTitle);
+        tvNewServicesCount = findViewById(R.id.tvNewServicesCount);
+        tvUpcomingServicesTitle = findViewById(R.id.tvUpcomingServicesTitle);
+        tvUpcomingServicesCount = findViewById(R.id.tvUpcomingServicesCount);
 
         if (user != null) {
             FirebaseFirestore.getInstance()
@@ -74,10 +87,14 @@ public class DashboardActivity extends AppCompatActivity {
                     });
         }
 
-        findViewById(R.id.cardNewServices).setOnClickListener(v ->
-                openJobs("pending", "New Service Offerings"));
-        findViewById(R.id.cardUpcomingServices).setOnClickListener(v ->
-                openJobs("upcoming", "Upcoming Services"));
+        findViewById(R.id.cardNewServices).setOnClickListener(v -> {
+            markSeen("pending");
+            openJobs("pending", "New Service Offerings");
+        });
+        findViewById(R.id.cardUpcomingServices).setOnClickListener(v -> {
+            markSeen("upcoming");
+            openJobs("upcoming", "Upcoming Services");
+        });
         findViewById(R.id.cardTodayEarnings).setOnClickListener(v ->
                 openEarnings("today", "Today's Earnings"));
         findViewById(R.id.cardMonthlyEarnings).setOnClickListener(v ->
@@ -90,6 +107,7 @@ public class DashboardActivity extends AppCompatActivity {
 
         if (user != null) {
             loadProviderStats(user.getUid(), tvTotalBookings, tvAvgResponseTime);
+            loadDashboardCounts(user.getUid());
         }
 
         BottomNavigationView bottomNavigation = findViewById(R.id.bottomNavigation);
@@ -103,7 +121,7 @@ public class DashboardActivity extends AppCompatActivity {
                     startActivity(new Intent(this, ProviderHistoryActivity.class));
                     return true;
                 } else if (id == R.id.nav_messages) {
-                    Toast.makeText(this, "Messages coming soon", Toast.LENGTH_SHORT).show();
+                    startActivity(new Intent(this, MessagesActivity.class));
                     return true;
                 } else if (id == R.id.nav_settings) {
                     startActivity(new Intent(this, ProviderSettingsActivity.class));
@@ -189,5 +207,69 @@ public class DashboardActivity extends AppCompatActivity {
                     tvTotal.setText("0");
                     tvAvg.setText("N/A");
                 });
+    }
+
+    private void loadDashboardCounts(String providerId) {
+        FirebaseFirestore.getInstance()
+                .collection("bookings")
+                .whereEqualTo("providerId", providerId)
+                .whereEqualTo("status", "pending")
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    pendingCount = snapshot.size();
+                    updateDashboardCountUi("pending");
+                });
+
+        FirebaseFirestore.getInstance()
+                .collection("bookings")
+                .whereEqualTo("providerId", providerId)
+                .whereIn("status",
+                        java.util.Arrays.asList("accepted", "on process", "on-process", "ongoing"))
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    upcomingCount = snapshot.size();
+                    updateDashboardCountUi("upcoming");
+                });
+    }
+
+    private void updateDashboardCountUi(String mode) {
+        android.content.SharedPreferences prefs =
+                getSharedPreferences("dashboard_prefs", MODE_PRIVATE);
+        int lastSeenPending = prefs.getInt("last_seen_pending", 0);
+        int lastSeenUpcoming = prefs.getInt("last_seen_upcoming", 0);
+
+        if ("pending".equals(mode) && tvNewServicesCount != null && tvNewServicesTitle != null) {
+            tvNewServicesCount.setText(String.valueOf(pendingCount));
+            boolean unread = pendingCount > lastSeenPending;
+            tvNewServicesTitle.setTypeface(null, unread ? Typeface.BOLD : Typeface.NORMAL);
+            tvNewServicesCount.setTypeface(null, unread ? Typeface.BOLD : Typeface.NORMAL);
+        } else if ("upcoming".equals(mode)
+                && tvUpcomingServicesCount != null
+                && tvUpcomingServicesTitle != null) {
+            tvUpcomingServicesCount.setText(String.valueOf(upcomingCount));
+            boolean unread = upcomingCount > lastSeenUpcoming;
+            tvUpcomingServicesTitle.setTypeface(null, unread ? Typeface.BOLD : Typeface.NORMAL);
+            tvUpcomingServicesCount.setTypeface(null, unread ? Typeface.BOLD : Typeface.NORMAL);
+        }
+    }
+
+    private void markSeen(String mode) {
+        android.content.SharedPreferences prefs =
+                getSharedPreferences("dashboard_prefs", MODE_PRIVATE);
+        android.content.SharedPreferences.Editor editor = prefs.edit();
+        if ("pending".equals(mode)) {
+            editor.putInt("last_seen_pending", pendingCount);
+            if (tvNewServicesTitle != null && tvNewServicesCount != null) {
+                tvNewServicesTitle.setTypeface(null, Typeface.NORMAL);
+                tvNewServicesCount.setTypeface(null, Typeface.NORMAL);
+            }
+        } else if ("upcoming".equals(mode)) {
+            editor.putInt("last_seen_upcoming", upcomingCount);
+            if (tvUpcomingServicesTitle != null && tvUpcomingServicesCount != null) {
+                tvUpcomingServicesTitle.setTypeface(null, Typeface.NORMAL);
+                tvUpcomingServicesCount.setTypeface(null, Typeface.NORMAL);
+            }
+        }
+        editor.apply();
     }
 }

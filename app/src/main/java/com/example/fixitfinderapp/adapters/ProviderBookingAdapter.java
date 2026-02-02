@@ -16,14 +16,14 @@ import java.util.List;
 public class ProviderBookingAdapter extends RecyclerView.Adapter<ProviderBookingAdapter.VH> {
 
     private final List<ProviderBookingItem> items;
-    private final boolean showActions;
+    private final String mode;
     private final BookingActionListener actionListener;
 
     public ProviderBookingAdapter(List<ProviderBookingItem> items,
-                                  boolean showActions,
+                                  String mode,
                                   BookingActionListener actionListener) {
         this.items = items;
-        this.showActions = showActions;
+        this.mode = mode;
         this.actionListener = actionListener;
     }
 
@@ -43,8 +43,15 @@ public class ProviderBookingAdapter extends RecyclerView.Adapter<ProviderBooking
         holder.tvBookedAt.setText(item.bookedAt);
         holder.tvRequiredAt.setText(item.requiredAt);
         holder.tvLocation.setText(item.location);
-        holder.layoutActions.setVisibility(showActions ? View.VISIBLE : View.GONE);
-        if (showActions) {
+        holder.tvStatus.setText("Status: " + formatStatus(item.status));
+
+        boolean isPending = "pending".equalsIgnoreCase(mode);
+        boolean isUpcoming = "upcoming".equalsIgnoreCase(mode);
+        holder.layoutActions.setVisibility(isPending ? View.VISIBLE : View.GONE);
+        holder.layoutProgressActions.setVisibility(isUpcoming ? View.VISIBLE : View.GONE);
+        holder.layoutFinalActions.setVisibility(isUpcoming ? View.VISIBLE : View.GONE);
+
+        if (isPending) {
             holder.btnAccept.setOnClickListener(v -> {
                 if (actionListener != null) {
                     actionListener.onAccept(item);
@@ -59,6 +66,35 @@ public class ProviderBookingAdapter extends RecyclerView.Adapter<ProviderBooking
             holder.btnAccept.setOnClickListener(null);
             holder.btnDecline.setOnClickListener(null);
         }
+
+        if (isUpcoming) {
+            holder.btnProcess.setOnClickListener(v -> {
+                if (actionListener != null) {
+                    actionListener.onProcess(item);
+                }
+            });
+            holder.btnFinish.setOnClickListener(v -> {
+                if (actionListener != null) {
+                    actionListener.onFinish(item);
+                }
+            });
+            holder.btnCancel.setOnClickListener(v -> {
+                if (actionListener != null) {
+                    actionListener.onCancel(item);
+                }
+            });
+            holder.btnReschedule.setOnClickListener(v -> {
+                if (actionListener != null) {
+                    actionListener.onReschedule(item);
+                }
+            });
+            applyUpcomingActionVisibility(holder, item.status);
+        } else {
+            holder.btnProcess.setOnClickListener(null);
+            holder.btnFinish.setOnClickListener(null);
+            holder.btnCancel.setOnClickListener(null);
+            holder.btnReschedule.setOnClickListener(null);
+        }
     }
 
     @Override
@@ -72,9 +108,16 @@ public class ProviderBookingAdapter extends RecyclerView.Adapter<ProviderBooking
         final TextView tvBookedAt;
         final TextView tvRequiredAt;
         final TextView tvLocation;
+        final TextView tvStatus;
         final View layoutActions;
+        final View layoutProgressActions;
+        final View layoutFinalActions;
         final android.widget.Button btnAccept;
         final android.widget.Button btnDecline;
+        final android.widget.Button btnProcess;
+        final android.widget.Button btnFinish;
+        final android.widget.Button btnCancel;
+        final android.widget.Button btnReschedule;
 
         VH(@NonNull View itemView) {
             super(itemView);
@@ -83,14 +126,89 @@ public class ProviderBookingAdapter extends RecyclerView.Adapter<ProviderBooking
             tvBookedAt = itemView.findViewById(R.id.tvBookedAt);
             tvRequiredAt = itemView.findViewById(R.id.tvRequiredAt);
             tvLocation = itemView.findViewById(R.id.tvBookingLocation);
+            tvStatus = itemView.findViewById(R.id.tvBookingStatus);
             layoutActions = itemView.findViewById(R.id.layoutActions);
+            layoutProgressActions = itemView.findViewById(R.id.layoutProgressActions);
+            layoutFinalActions = itemView.findViewById(R.id.layoutFinalActions);
             btnAccept = itemView.findViewById(R.id.btnAccept);
             btnDecline = itemView.findViewById(R.id.btnDecline);
+            btnProcess = itemView.findViewById(R.id.btnProcess);
+            btnFinish = itemView.findViewById(R.id.btnFinish);
+            btnCancel = itemView.findViewById(R.id.btnCancel);
+            btnReschedule = itemView.findViewById(R.id.btnReschedule);
         }
     }
 
     public interface BookingActionListener {
         void onAccept(ProviderBookingItem item);
         void onDecline(ProviderBookingItem item);
+        void onProcess(ProviderBookingItem item);
+        void onFinish(ProviderBookingItem item);
+        void onCancel(ProviderBookingItem item);
+        void onReschedule(ProviderBookingItem item);
+    }
+
+    private String formatStatus(String status) {
+        if (status == null) {
+            return "Pending";
+        }
+        String trimmed = status.trim();
+        if (trimmed.equalsIgnoreCase("on-process")) {
+            return "On Process";
+        }
+        if (trimmed.equalsIgnoreCase("ongoing")) {
+            return "On Process";
+        }
+        if (trimmed.equalsIgnoreCase("accepted")) {
+            return "Accepted";
+        }
+        if (trimmed.equalsIgnoreCase("declined")) {
+            return "Declined";
+        }
+        if (trimmed.equalsIgnoreCase("cancelled")) {
+            return "Cancelled";
+        }
+        if (trimmed.equalsIgnoreCase("rescheduled")) {
+            return "Rescheduled";
+        }
+        if (trimmed.equalsIgnoreCase("finished")) {
+            return "Finished";
+        }
+        if (trimmed.equalsIgnoreCase("pending")) {
+            return "Pending";
+        }
+        return trimmed;
+    }
+
+    private boolean isInProcess(String status) {
+        if (status == null) {
+            return false;
+        }
+        String normalized = status.trim().toLowerCase(java.util.Locale.US);
+        return normalized.equals("on process")
+                || normalized.equals("on-process")
+                || normalized.equals("ongoing");
+    }
+
+    private boolean isAccepted(String status) {
+        if (status == null) {
+            return false;
+        }
+        return status.trim().equalsIgnoreCase("accepted");
+    }
+
+    private void applyUpcomingActionVisibility(VH holder, String status) {
+        boolean accepted = isAccepted(status);
+        boolean inProcess = isInProcess(status);
+
+        holder.btnProcess.setVisibility(accepted ? View.VISIBLE : View.GONE);
+        holder.btnReschedule.setVisibility(accepted ? View.VISIBLE : View.GONE);
+        holder.btnFinish.setVisibility(inProcess ? View.VISIBLE : View.GONE);
+        holder.btnCancel.setVisibility(View.GONE);
+
+        boolean showProgressRow = accepted || inProcess;
+        boolean showFinalRow = accepted;
+        holder.layoutProgressActions.setVisibility(showProgressRow ? View.VISIBLE : View.GONE);
+        holder.layoutFinalActions.setVisibility(showFinalRow ? View.VISIBLE : View.GONE);
     }
 }

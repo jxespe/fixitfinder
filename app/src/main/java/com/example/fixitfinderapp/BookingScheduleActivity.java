@@ -9,15 +9,19 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -30,6 +34,7 @@ import java.util.Set;
 
 public class BookingScheduleActivity extends AppCompatActivity {
 
+    private static final String TAG = "BookingSchedule";
     private static final int START_HOUR = 5;
     private static final int END_HOUR = 22;
 
@@ -109,7 +114,13 @@ public class BookingScheduleActivity extends AppCompatActivity {
         query.get()
                 .addOnSuccessListener(snapshot -> {
                     snapshot.getDocuments().forEach(doc -> {
-                        String timeSlot = doc.getString("timeSlot");
+                        String timeSlot = normalizeSlot(doc.getString("timeSlot"));
+                        if (TextUtils.isEmpty(timeSlot)) {
+                            Long slotKey = doc.getLong("timeSlotKey");
+                            if (slotKey != null) {
+                                timeSlot = formatHour(slotKey.intValue());
+                            }
+                        }
                         if (!TextUtils.isEmpty(timeSlot)) {
                             bookedTimes.add(timeSlot);
                         }
@@ -126,6 +137,9 @@ public class BookingScheduleActivity extends AppCompatActivity {
     private void renderSlots() {
         List<String> allSlots = buildTimeSlots();
         boolean allBooked = !allSlots.isEmpty() && bookedTimes.containsAll(allSlots);
+        if (!TextUtils.isEmpty(selectedTime) && bookedTimes.contains(selectedTime)) {
+            selectedTime = null;
+        }
         if (allBooked) {
             tvDateStatus.setText("All time slots are booked for this date.");
             tvDateStatus.setTextColor(0xFFF44336);
@@ -135,7 +149,8 @@ public class BookingScheduleActivity extends AppCompatActivity {
         }
 
         for (String slot : allSlots) {
-            TextView view = createSlotView(slot, bookedTimes.contains(slot));
+            boolean isPast = isSlotInPast(slot);
+            TextView view = createSlotView(slot, bookedTimes.contains(slot), isPast);
             LinearLayout target = slot.toUpperCase(Locale.US).contains("AM")
                     ? layoutAmSlots
                     : layoutPmSlots;
@@ -150,12 +165,12 @@ public class BookingScheduleActivity extends AppCompatActivity {
         }
     }
 
-    private TextView createSlotView(String slot, boolean booked) {
+    private TextView createSlotView(String slot, boolean booked, boolean isPast) {
         TextView view = new TextView(this);
         view.setText(slot);
         view.setTextSize(12f);
         view.setPadding(24, 12, 24, 12);
-        if (booked) {
+        if (booked || isPast) {
             view.setEnabled(false);
             view.setTextColor(0xFF9E9E9E);
             view.setBackgroundResource(R.drawable.button_outline_gray);
@@ -201,6 +216,31 @@ public class BookingScheduleActivity extends AppCompatActivity {
         return String.format(Locale.US, "%d:00 %s", displayHour, meridiem);
     }
 
+    private String normalizeSlot(String slot) {
+        if (TextUtils.isEmpty(slot)) {
+            return null;
+        }
+        String cleaned = slot.trim().toUpperCase(Locale.US);
+        if (cleaned.contains(":")) {
+            return cleaned.replace("  ", " ");
+        }
+        // Accept legacy formats like "5 AM" or "5PM".
+        String digits = cleaned.replaceAll("[^0-9]", "");
+        boolean isPm = cleaned.contains("PM");
+        boolean isAm = cleaned.contains("AM");
+        if (!TextUtils.isEmpty(digits) && (isAm || isPm)) {
+            int hour = Integer.parseInt(digits);
+            if (hour >= 1 && hour <= 12) {
+                int normalizedHour = hour % 12;
+                if (normalizedHour == 0) {
+                    normalizedHour = 12;
+                }
+                return String.format(Locale.US, "%d:00 %s", normalizedHour, isPm ? "PM" : "AM");
+            }
+        }
+        return cleaned;
+    }
+
     private String formatDateKey(Calendar calendar) {
         return String.format(Locale.US, "%04d-%02d-%02d",
                 calendar.get(Calendar.YEAR),
@@ -227,53 +267,101 @@ public class BookingScheduleActivity extends AppCompatActivity {
             scheduled.set(Calendar.DAY_OF_MONTH, Integer.parseInt(parts[2]));
         }
         int hour = parseHour(selectedTime);
+        String normalizedSlot = formatHour(hour);
         scheduled.set(Calendar.HOUR_OF_DAY, hour);
         scheduled.set(Calendar.MINUTE, 0);
         scheduled.set(Calendar.SECOND, 0);
         scheduled.set(Calendar.MILLISECOND, 0);
 
-        Map<String, Object> booking = new HashMap<>();
-        booking.put("userId", user.getUid());
-        booking.put("bookedBy", !TextUtils.isEmpty(user.getEmail())
-                ? user.getEmail()
-                : user.getUid());
-        booking.put("providerId", providerId);
-        booking.put("providerName", providerName);
-        booking.put("providerLogoUri", logoUri);
-        booking.put("serviceCategory", serviceCategory);
-        booking.put("providerAddress", providerAddress);
-        booking.put("status", "pending");
-        booking.put("paymentStatus", "On-hold");
-        booking.put("dateKey", selectedDateKey);
-        booking.put("timeSlot", selectedTime);
-        booking.put("scheduledAt", new Timestamp(scheduled.getTime()));
-        booking.put("createdAt", System.currentTimeMillis());
-        booking.put("bookingNumber", createBookingNumber());
-
         btnConfirm.setEnabled(false);
-        btnConfirm.setText("Booking...");
-        FirebaseFirestore.getInstance()
-                .collection("bookings")
-                .add(booking)
-                .addOnSuccessListener(doc -> {
-                    Intent intent = new Intent(this, BookingConfirmationActivity.class);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                })
-                .addOnFailureListener(e -> {
-                    btnConfirm.setEnabled(true);
-                    btnConfirm.setText("Confirm Booking");
-                    if (e instanceof FirebaseFirestoreException
-                            && ((FirebaseFirestoreException) e).getCode()
-                            == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
-                        Toast.makeText(this,
-                                "Permission denied. Check Firestore rules for bookings.",
+        btnConfirm.setText("Checking...");
+        checkExistingBooking(hour, normalizedSlot, () -> {
+            Map<String, Object> booking = new HashMap<>();
+            booking.put("userId", user.getUid());
+            booking.put("bookedBy", !TextUtils.isEmpty(user.getEmail())
+                    ? user.getEmail()
+                    : user.getUid());
+            booking.put("providerId", providerId);
+            booking.put("providerName", providerName);
+            booking.put("providerLogoUri", logoUri);
+            booking.put("serviceCategory", serviceCategory);
+            booking.put("providerAddress", providerAddress);
+            booking.put("status", "pending");
+            booking.put("paymentStatus", "On-hold");
+            booking.put("dateKey", selectedDateKey);
+            booking.put("timeSlot", normalizedSlot);
+            booking.put("timeSlotKey", hour);
+            booking.put("scheduledAt", new Timestamp(scheduled.getTime()));
+            booking.put("createdAt", System.currentTimeMillis());
+            booking.put("bookingNumber", createBookingNumber());
+
+            btnConfirm.setText("Booking...");
+            FirebaseFirestore.getInstance()
+                    .collection("bookings")
+                    .add(booking)
+                    .addOnSuccessListener(doc -> {
+                        createConversationAndSeedMessage(doc.getId(), user, normalizedSlot);
+                        Intent intent = new Intent(this, BookingConfirmationActivity.class);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                    })
+                    .addOnFailureListener(e -> {
+                        btnConfirm.setEnabled(true);
+                        btnConfirm.setText("Confirm Booking");
+                        if (e instanceof FirebaseFirestoreException
+                                && ((FirebaseFirestoreException) e).getCode()
+                                == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                            Toast.makeText(this,
+                                    "Permission denied. Check Firestore rules for bookings.",
+                                    Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        Toast.makeText(this, "Failed to book: " + e.getMessage(),
                                 Toast.LENGTH_LONG).show();
+                    });
+        });
+    }
+
+    private void checkExistingBooking(int hour, String normalizedSlot, Runnable onAvailable) {
+        Query baseQuery = FirebaseFirestore.getInstance()
+                .collection("bookings")
+                .whereEqualTo("providerId", providerId)
+                .whereEqualTo("dateKey", selectedDateKey);
+
+        baseQuery.whereEqualTo("timeSlotKey", hour)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (!snapshot.isEmpty()) {
+                        handleSlotAlreadyBooked();
                         return;
                     }
-                    Toast.makeText(this, "Failed to book: " + e.getMessage(),
-                            Toast.LENGTH_LONG).show();
-                });
+                    baseQuery.whereEqualTo("timeSlot", normalizedSlot)
+                            .get()
+                            .addOnSuccessListener(fallback -> {
+                                if (!fallback.isEmpty()) {
+                                    handleSlotAlreadyBooked();
+                                    return;
+                                }
+                                onAvailable.run();
+                            })
+                            .addOnFailureListener(this::handleAvailabilityCheckError);
+                })
+                .addOnFailureListener(this::handleAvailabilityCheckError);
+    }
+
+    private void handleSlotAlreadyBooked() {
+        Toast.makeText(this, "This time slot is already booked.",
+                Toast.LENGTH_LONG).show();
+        btnConfirm.setEnabled(true);
+        btnConfirm.setText("Confirm Booking");
+        loadBookedSlots();
+    }
+
+    private void handleAvailabilityCheckError(Exception e) {
+        btnConfirm.setEnabled(true);
+        btnConfirm.setText("Confirm Booking");
+        Toast.makeText(this, "Failed to check availability: " + e.getMessage(),
+                Toast.LENGTH_LONG).show();
     }
 
     private int parseHour(String slot) {
@@ -289,6 +377,98 @@ public class BookingScheduleActivity extends AppCompatActivity {
             hour += 12;
         }
         return hour;
+    }
+
+    private boolean isSlotInPast(String slot) {
+        if (TextUtils.isEmpty(selectedDateKey) || TextUtils.isEmpty(slot)) {
+            return false;
+        }
+        Calendar now = Calendar.getInstance();
+        Calendar slotTime = Calendar.getInstance();
+        String[] parts = selectedDateKey.split("-");
+        if (parts.length == 3) {
+            slotTime.set(Calendar.YEAR, Integer.parseInt(parts[0]));
+            slotTime.set(Calendar.MONTH, Integer.parseInt(parts[1]) - 1);
+            slotTime.set(Calendar.DAY_OF_MONTH, Integer.parseInt(parts[2]));
+        }
+        int hour = parseHour(slot);
+        slotTime.set(Calendar.HOUR_OF_DAY, hour);
+        slotTime.set(Calendar.MINUTE, 0);
+        slotTime.set(Calendar.SECOND, 0);
+        slotTime.set(Calendar.MILLISECOND, 0);
+        return now.after(slotTime);
+    }
+
+    private void createConversationAndSeedMessage(String bookingId, FirebaseUser user, String slot) {
+        if (TextUtils.isEmpty(bookingId) || user == null) {
+            Log.w(TAG, "Skip conversation: bookingId or user missing");
+            return;
+        }
+        Log.d(TAG, "Creating conversation for bookingId=" + bookingId
+                + " providerId=" + providerId + " userId=" + user.getUid());
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        String fallbackName = !TextUtils.isEmpty(user.getEmail()) ? user.getEmail() : user.getUid();
+        db.collection("users")
+                .document(user.getUid())
+                .get()
+                .addOnSuccessListener(doc -> {
+                    String userName = doc.getString("fullName");
+                    if (TextUtils.isEmpty(userName)) {
+                        userName = doc.getString("firstName");
+                    }
+                    if (TextUtils.isEmpty(userName)) {
+                        userName = fallbackName;
+                    }
+                    writeConversation(db, bookingId, user, userName, slot);
+                })
+                .addOnFailureListener(e -> writeConversation(db, bookingId, user, fallbackName, slot));
+    }
+
+    private void writeConversation(FirebaseFirestore db, String bookingId, FirebaseUser user,
+                                   String userName, String slot) {
+        String initialMessage = "Hi! I just booked an appointment for "
+                + selectedDateKey + " " + slot + ".";
+
+        java.util.Map<String, Object> convo = new java.util.HashMap<>();
+        convo.put("bookingId", bookingId);
+        convo.put("providerId", providerId);
+        convo.put("providerName", providerName);
+        convo.put("providerLogoUri", logoUri);
+        convo.put("userId", user.getUid());
+        convo.put("userName", userName);
+        convo.put("unreadUserCount", 0);
+        convo.put("unreadProviderCount", 1);
+        convo.put("createdAt", FieldValue.serverTimestamp());
+        convo.put("lastMessage", initialMessage);
+        convo.put("lastMessageAt", FieldValue.serverTimestamp());
+
+        java.util.Map<String, Object> message = new java.util.HashMap<>();
+        message.put("senderId", user.getUid());
+        message.put("senderRole", "user");
+        message.put("text", initialMessage);
+        message.put("createdAt", FieldValue.serverTimestamp());
+
+        com.google.firebase.firestore.DocumentReference convoRef =
+                db.collection("conversations").document(bookingId);
+        convoRef.set(convo, SetOptions.merge())
+                .addOnSuccessListener(unused -> {
+                    Log.d(TAG, "Conversation created for bookingId=" + bookingId);
+                    convoRef.collection("messages").document().set(message)
+                            .addOnSuccessListener(msg ->
+                                    Log.d(TAG, "Seed message created for bookingId=" + bookingId))
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Failed to create seed message", e);
+                                Toast.makeText(this,
+                                        "Booked, but initial chat message failed. Check Firestore rules.",
+                                        Toast.LENGTH_LONG).show();
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to create conversation", e);
+                    Toast.makeText(this,
+                            "Booked, but chat thread was not created. Check Firestore rules.",
+                            Toast.LENGTH_LONG).show();
+                });
     }
 
     private String createBookingNumber() {

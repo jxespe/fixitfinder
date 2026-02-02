@@ -44,7 +44,7 @@ public class ProviderJobListActivity extends AppCompatActivity {
         mode = getIntent().getStringExtra("mode");
         adapter = new ProviderBookingAdapter(
                 items,
-                "pending".equals(mode),
+                mode,
                 new ProviderBookingAdapter.BookingActionListener() {
                     @Override
                     public void onAccept(ProviderBookingItem item) {
@@ -54,6 +54,26 @@ public class ProviderJobListActivity extends AppCompatActivity {
                     @Override
                     public void onDecline(ProviderBookingItem item) {
                         updateBookingStatus(item, "declined");
+                    }
+
+                    @Override
+                    public void onProcess(ProviderBookingItem item) {
+                        updateBookingStatus(item, "on process");
+                    }
+
+                    @Override
+                    public void onFinish(ProviderBookingItem item) {
+                        updateBookingStatus(item, "finished");
+                    }
+
+                    @Override
+                    public void onCancel(ProviderBookingItem item) {
+                        updateBookingStatus(item, "cancelled");
+                    }
+
+                    @Override
+                    public void onReschedule(ProviderBookingItem item) {
+                        updateBookingStatus(item, "rescheduled");
                     }
                 });
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -99,6 +119,7 @@ public class ProviderJobListActivity extends AppCompatActivity {
                             location = doc.getString("address");
                         }
                         String bookedAt = formatMillis(doc.getLong("createdAt"));
+                        String status = doc.getString("status");
 
                         Timestamp scheduledAt = doc.getTimestamp("scheduledAt");
                         String requiredAt = scheduledAt != null
@@ -115,7 +136,8 @@ public class ProviderJobListActivity extends AppCompatActivity {
                                 "Booked by: " + valueOrUnknown(bookedBy),
                                 "Booked at: " + valueOrUnknown(bookedAt),
                                 "Required: " + valueOrUnknown(requiredAt),
-                                "Location: " + valueOrUnknown(location)
+                                "Location: " + valueOrUnknown(location),
+                                status
                         ));
                     });
                     adapter.notifyDataSetChanged();
@@ -146,16 +168,24 @@ public class ProviderJobListActivity extends AppCompatActivity {
         if (item == null || TextUtils.isEmpty(item.bookingId)) {
             return;
         }
+        java.util.HashMap<String, Object> updates = new java.util.HashMap<>();
+        updates.put("status", status);
+        updates.put("respondedAt", System.currentTimeMillis());
+        if ("accepted".equals(status)) {
+            updates.put("acceptedAt", FieldValue.serverTimestamp());
+        } else if ("on process".equals(status) || "on-process".equals(status) || "ongoing".equals(status)) {
+            updates.put("startedAt", FieldValue.serverTimestamp());
+        } else if ("finished".equals(status)) {
+            updates.put("finishedAt", FieldValue.serverTimestamp());
+        } else if ("cancelled".equals(status)) {
+            updates.put("cancelledAt", FieldValue.serverTimestamp());
+        } else if ("rescheduled".equals(status)) {
+            updates.put("rescheduledAt", FieldValue.serverTimestamp());
+        }
         FirebaseFirestore.getInstance()
                 .collection("bookings")
                 .document(item.bookingId)
-                .update(new java.util.HashMap<String, Object>() {{
-                    put("status", status);
-                    put("respondedAt", System.currentTimeMillis());
-                    if ("accepted".equals(status)) {
-                        put("acceptedAt", FieldValue.serverTimestamp());
-                    }
-                }})
+                .update(updates)
                 .addOnSuccessListener(unused -> loadBookings(mode))
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to update booking.",

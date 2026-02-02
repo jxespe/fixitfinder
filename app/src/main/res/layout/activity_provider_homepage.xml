@@ -146,12 +146,24 @@
                     android:padding="12dp">
 
                     <TextView
+                        android:id="@+id/tvNewServicesTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="New Service Offerings"
                         android:textSize="12sp"
                         android:textColor="@color/white"
                         android:textStyle="bold"
+                        android:gravity="center" />
+
+                    <TextView
+                        android:id="@+id/tvNewServicesCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="20sp"
+                        android:textColor="@color/white"
+                        android:textStyle="bold"
+                        android:layout_marginTop="6dp"
                         android:gravity="center" />
                 </LinearLayout>
 
@@ -168,12 +180,24 @@
                     android:padding="12dp">
 
                     <TextView
+                        android:id="@+id/tvUpcomingServicesTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Upcoming Services"
                         android:textSize="12sp"
                         android:textColor="@color/white"
                         android:textStyle="bold"
+                        android:gravity="center" />
+
+                    <TextView
+                        android:id="@+id/tvUpcomingServicesCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="20sp"
+                        android:textColor="@color/white"
+                        android:textStyle="bold"
+                        android:layout_marginTop="6dp"
                         android:gravity="center" />
                 </LinearLayout>
 

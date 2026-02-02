@@ -52,6 +52,16 @@
         android:textColor="#757575"
         android:layout_marginTop="2dp" />
 
+    <TextView
+        android:id="@+id/tvBookingStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Status: Pending"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:layout_marginTop="6dp" />
+
     <LinearLayout
         android:id="@+id/layoutActions"
         android:layout_width="match_parent"
@@ -75,6 +85,66 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Decline"
+            android:textColor="@color/color_primary"
+            android:background="@drawable/button_outline_gray"
+            android:padding="8dp"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutProgressActions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/btnProcess"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Processing"
+            android:textColor="@color/white"
+            android:background="@drawable/button_rounded_primary"
+            android:padding="8dp" />
+
+        <Button
+            android:id="@+id/btnFinish"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Finish"
+            android:textColor="@color/white"
+            android:background="@drawable/button_rounded_primary"
+            android:padding="8dp"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutFinalActions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/btnReschedule"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Reschedule"
+            android:textColor="@color/color_primary"
+            android:background="@drawable/button_outline_gray"
+            android:padding="8dp" />
+
+        <Button
+            android:id="@+id/btnCancel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Cancel"
             android:textColor="@color/color_primary"
             android:background="@drawable/button_outline_gray"
             android:padding="8dp"

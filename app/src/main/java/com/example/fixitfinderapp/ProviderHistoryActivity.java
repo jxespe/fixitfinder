@@ -75,7 +75,7 @@ public class ProviderHistoryActivity extends AppCompatActivity {
             } else if (id == R.id.nav_history) {
                 return true;
             } else if (id == R.id.nav_messages) {
-                Toast.makeText(this, "Messages coming soon", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, MessagesActivity.class));
                 return true;
             } else if (id == R.id.nav_settings) {
                 startActivity(new Intent(this, ProviderSettingsActivity.class));
