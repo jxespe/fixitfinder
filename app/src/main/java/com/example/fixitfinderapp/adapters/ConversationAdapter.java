@@ -1,6 +1,5 @@
 package com.example.fixitfinderapp.adapters;
 
-import android.net.Uri;
 import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.fixitfinderapp.ImageLoader;
 import com.example.fixitfinderapp.R;
 import com.example.fixitfinderapp.models.ConversationItem;
 
@@ -52,11 +52,7 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
         } else {
             holder.tvBadge.setVisibility(View.GONE);
         }
-        if (item.avatarUri != null && !item.avatarUri.isEmpty()) {
-            holder.ivAvatar.setImageURI(Uri.parse(item.avatarUri));
-        } else {
-            holder.ivAvatar.setImageResource(android.R.drawable.ic_menu_myplaces);
-        }
+        ImageLoader.load(holder.ivAvatar, item.avatarUri, android.R.drawable.ic_menu_myplaces);
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onConversationClick(item);

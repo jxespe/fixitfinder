@@ -1,18 +1,21 @@
 package com.example.fixitfinderapp;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import android.text.TextUtils;
+
 
 /**
  * User home/dashboard screen that shows the service categories grid.
@@ -31,28 +34,20 @@ public class UserDashboardActivity extends AppCompatActivity {
 
         TextView tvGreeting = findViewById(R.id.tvGreeting);
         setGreeting(tvGreeting);
+        ImageView ivProfilePic = findViewById(R.id.ivProfilePic);
+        ImageView ivUserProfile = findViewById(R.id.ivUserProfile);
+        loadProfilePhoto(ivProfilePic, ivUserProfile);
+        wireProfileTaps(ivProfilePic, ivUserProfile);
 
         wireCategoryCards();
 
-        // Bottom navigation – wire basic tabs; real screens can be added later
-        BottomNavigationView bottomNavigation = findViewById(R.id.bottomNavigation);
-        bottomNavigation.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.nav_home) {
-                // Already on home; no-op
-                return true;
-            } else if (id == R.id.nav_history) {
-                startActivity(new Intent(this, HistoryActivity.class));
-                return true;
-            } else if (id == R.id.nav_messages) {
-                startActivity(new Intent(this, MessagesActivity.class));
-                return true;
-            } else if (id == R.id.nav_settings) {
-                startActivity(new Intent(this, UserSettingsActivity.class));
-                return true;
-            }
-            return false;
-        });
+        NavigationHelper.setupBottomNav(this, R.id.nav_home);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        NavigationHelper.ensureLoggedIn(this);
     }
 
     private void wireCategoryCards() {
@@ -72,6 +67,19 @@ public class UserDashboardActivity extends AppCompatActivity {
                 .setOnClickListener(v -> openCategory("Electronics Repair"));
         findViewById(R.id.cardInternetTechnician)
                 .setOnClickListener(v -> openCategory("Internet Technician"));
+    }
+
+    private void wireProfileTaps(ImageView... views) {
+        if (views == null) {
+            return;
+        }
+        View.OnClickListener listener =
+                v -> startActivity(new Intent(this, UserProfileActivity.class));
+        for (ImageView view : views) {
+            if (view != null) {
+                view.setOnClickListener(listener);
+            }
+        }
     }
 
     private void openCategory(String name) {
@@ -104,6 +112,40 @@ public class UserDashboardActivity extends AppCompatActivity {
                     String preferredName = pickFirstName(null, null, displayName, fallbackEmail);
                     tvGreeting.setText("Hello, " + preferredName + "!");
                 });
+    }
+
+    private void loadProfilePhoto(ImageView... views) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null || views == null || views.length == 0) {
+            return;
+        }
+        FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(user.getUid())
+                .get()
+                .addOnSuccessListener(doc -> {
+                    String photo = doc.getString("photoUrl");
+                    if (TextUtils.isEmpty(photo)) {
+                        photo = doc.getString("profilePhotoUri");
+                    }
+                    if (TextUtils.isEmpty(photo) && user.getPhotoUrl() != null) {
+                        photo = user.getPhotoUrl().toString();
+                    }
+                    if (!TextUtils.isEmpty(photo)) {
+                        setProfileImage(views, photo);
+                    }
+                });
+    }
+
+    private void setProfileImage(ImageView[] views, String uriString) {
+        if (views == null || views.length == 0 || TextUtils.isEmpty(uriString)) {
+            return;
+        }
+        for (ImageView view : views) {
+            if (view != null) {
+                ImageLoader.load(view, uriString, 0);
+            }
+        }
     }
 
     private String pickFirstName(String firstName, String fullName, String displayName, String email) {

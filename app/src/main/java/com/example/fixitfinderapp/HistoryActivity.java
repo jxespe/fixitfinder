@@ -13,10 +13,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.fixitfinderapp.adapters.BookingHistoryAdapter;
 import com.example.fixitfinderapp.models.BookingHistoryItem;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
-import com.google.android.material.chip.Chip;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -65,26 +63,13 @@ public class HistoryActivity extends AppCompatActivity {
 
         loadHistory("all");
 
-        BottomNavigationView bottomNavigation = findViewById(R.id.bottomNavigation);
-        bottomNavigation.setSelectedItemId(R.id.nav_history);
-        bottomNavigation.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.nav_home) {
-                startActivity(new Intent(this, UserDashboardActivity.class));
-                finish();
-                return true;
-            } else if (id == R.id.nav_history) {
-                return true;
-            } else if (id == R.id.nav_messages) {
-                startActivity(new Intent(this, MessagesActivity.class));
-                return true;
-            } else if (id == R.id.nav_settings) {
-                startActivity(new Intent(this, UserSettingsActivity.class));
-                finish();
-                return true;
-            }
-            return false;
-        });
+        NavigationHelper.setupBottomNav(this, R.id.nav_history);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        NavigationHelper.ensureLoggedIn(this);
     }
 
     private String readFilterTag(int chipId) {

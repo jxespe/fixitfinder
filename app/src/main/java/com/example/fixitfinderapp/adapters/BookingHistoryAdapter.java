@@ -1,7 +1,6 @@
 package com.example.fixitfinderapp.adapters;
 
 import android.graphics.Color;
-import android.net.Uri;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +11,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.fixitfinderapp.ImageLoader;
 import com.example.fixitfinderapp.R;
 import com.example.fixitfinderapp.models.BookingHistoryItem;
 
@@ -44,11 +44,7 @@ public class BookingHistoryAdapter extends RecyclerView.Adapter<BookingHistoryAd
         holder.status.setTextColor(statusColor(item.status));
         holder.payment.setTextColor(statusColor(item.status));
 
-        if (!TextUtils.isEmpty(item.logoUri)) {
-            holder.logo.setImageURI(Uri.parse(item.logoUri));
-        } else {
-            holder.logo.setImageResource(android.R.drawable.ic_menu_myplaces);
-        }
+        ImageLoader.load(holder.logo, item.logoUri, android.R.drawable.ic_menu_myplaces);
     }
 
     @Override

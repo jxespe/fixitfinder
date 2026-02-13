@@ -67,6 +67,9 @@
         <activity
             android:name=".UserSettingsActivity"
             android:exported="false" />
+        <activity
+            android:name=".UserProfileActivity"
+            android:exported="false" />
 
         <activity
             android:name=".ProviderSettingsActivity"

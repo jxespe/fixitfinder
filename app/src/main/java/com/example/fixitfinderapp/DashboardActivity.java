@@ -1,7 +1,6 @@
 package com.example.fixitfinderapp;
 
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.graphics.Typeface;
@@ -13,7 +12,6 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -80,9 +78,8 @@ public class DashboardActivity extends AppCompatActivity {
                         }
                         updateServiceStatusButton(btnServiceStatus, serviceActive != null && serviceActive);
                         if (!TextUtils.isEmpty(logoUri)) {
-                            Uri uri = Uri.parse(logoUri);
-                            ivCompanyLogo.setImageURI(uri);
-                            ivWhyLogo.setImageURI(uri);
+                            ImageLoader.load(ivCompanyLogo, logoUri, android.R.drawable.ic_menu_myplaces);
+                            ImageLoader.load(ivWhyLogo, logoUri, android.R.drawable.ic_menu_myplaces);
                         }
                     });
         }
@@ -110,26 +107,13 @@ public class DashboardActivity extends AppCompatActivity {
             loadDashboardCounts(user.getUid());
         }
 
-        BottomNavigationView bottomNavigation = findViewById(R.id.bottomNavigation);
-        if (bottomNavigation != null) {
-            bottomNavigation.setSelectedItemId(R.id.nav_home);
-            bottomNavigation.setOnItemSelectedListener(item -> {
-                int id = item.getItemId();
-                if (id == R.id.nav_home) {
-                    return true;
-                } else if (id == R.id.nav_history) {
-                    startActivity(new Intent(this, ProviderHistoryActivity.class));
-                    return true;
-                } else if (id == R.id.nav_messages) {
-                    startActivity(new Intent(this, MessagesActivity.class));
-                    return true;
-                } else if (id == R.id.nav_settings) {
-                    startActivity(new Intent(this, ProviderSettingsActivity.class));
-                    return true;
-                }
-                return false;
-            });
-        }
+        NavigationHelper.setupBottomNav(this, R.id.nav_home);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        NavigationHelper.ensureLoggedIn(this);
     }
 
     private void openJobs(String mode, String title) {

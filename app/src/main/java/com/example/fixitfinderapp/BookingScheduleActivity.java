@@ -419,13 +419,25 @@ public class BookingScheduleActivity extends AppCompatActivity {
                     if (TextUtils.isEmpty(userName)) {
                         userName = fallbackName;
                     }
-                    writeConversation(db, bookingId, user, userName, slot);
+                    String userLogoUri = doc.getString("photoUrl");
+                    if (TextUtils.isEmpty(userLogoUri)) {
+                        userLogoUri = doc.getString("profilePhotoUri");
+                    }
+                    if (TextUtils.isEmpty(userLogoUri) && user.getPhotoUrl() != null) {
+                        userLogoUri = user.getPhotoUrl().toString();
+                    }
+                    writeConversation(db, bookingId, user, userName, userLogoUri, slot);
                 })
-                .addOnFailureListener(e -> writeConversation(db, bookingId, user, fallbackName, slot));
+                .addOnFailureListener(e -> {
+                    String fallbackLogo = user.getPhotoUrl() != null
+                            ? user.getPhotoUrl().toString()
+                            : null;
+                    writeConversation(db, bookingId, user, fallbackName, fallbackLogo, slot);
+                });
     }
 
     private void writeConversation(FirebaseFirestore db, String bookingId, FirebaseUser user,
-                                   String userName, String slot) {
+                                   String userName, String userLogoUri, String slot) {
         String initialMessage = "Hi! I just booked an appointment for "
                 + selectedDateKey + " " + slot + ".";
 
@@ -436,6 +448,7 @@ public class BookingScheduleActivity extends AppCompatActivity {
         convo.put("providerLogoUri", logoUri);
         convo.put("userId", user.getUid());
         convo.put("userName", userName);
+        convo.put("userLogoUri", userLogoUri);
         convo.put("unreadUserCount", 0);
         convo.put("unreadProviderCount", 1);
         convo.put("createdAt", FieldValue.serverTimestamp());

@@ -22,14 +22,14 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.yalantis.ucrop.UCrop;
-import com.yalantis.ucrop.UCropActivity;
 
-public class ProviderProfileActivity extends AppCompatActivity {
+public class UserProfileActivity extends AppCompatActivity {
 
-    private static final String TAG = "ProviderProfileActivity";
-    private ImageView ivCompanyLogo;
-    private TextView tvCompanyName;
-    private TextView tvServiceCategory;
+    private static final String TAG = "UserProfileActivity";
+    private ImageView ivProfilePhoto;
+    private TextView tvFullName;
+    private TextView tvEmail;
+    private TextView tvPhone;
     private TextView tvAddress;
     private FirebaseUser user;
 
@@ -37,8 +37,8 @@ public class ProviderProfileActivity extends AppCompatActivity {
     private Uri pendingInput;
     private Uri pendingSource;
 
-    private final ActivityResultLauncher<String> logoPicker =
-            registerForActivityResult(new ActivityResultContracts.GetContent(), this::onLogoPicked);
+    private final ActivityResultLauncher<String> photoPicker =
+            registerForActivityResult(new ActivityResultContracts.GetContent(), this::onPhotoPicked);
 
     private final ActivityResultLauncher<Intent> cropLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
@@ -47,19 +47,20 @@ public class ProviderProfileActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_provider_profile);
+        setContentView(R.layout.activity_user_profile);
 
         user = FirebaseAuth.getInstance().getCurrentUser();
 
         ImageButton btnBack = findViewById(R.id.btnBack);
-        ivCompanyLogo = findViewById(R.id.ivCompanyLogo);
-        tvCompanyName = findViewById(R.id.tvCompanyName);
-        tvServiceCategory = findViewById(R.id.tvServiceCategory);
-        tvAddress = findViewById(R.id.tvCompanyAddress);
-        ImageButton btnChangeLogo = findViewById(R.id.btnChangeLogo);
+        ivProfilePhoto = findViewById(R.id.ivProfilePhoto);
+        tvFullName = findViewById(R.id.tvFullName);
+        tvEmail = findViewById(R.id.tvEmail);
+        tvPhone = findViewById(R.id.tvPhone);
+        tvAddress = findViewById(R.id.tvAddress);
+        ImageButton btnChangePhoto = findViewById(R.id.btnChangePhoto);
 
         btnBack.setOnClickListener(v -> finish());
-        btnChangeLogo.setOnClickListener(v -> logoPicker.launch("image/*"));
+        btnChangePhoto.setOnClickListener(v -> photoPicker.launch("image/*"));
 
         loadProfile();
     }
@@ -71,41 +72,40 @@ public class ProviderProfileActivity extends AppCompatActivity {
             return;
         }
         FirebaseFirestore.getInstance()
-                .collection("providers")
+                .collection("users")
                 .document(user.getUid())
                 .get()
                 .addOnSuccessListener(doc -> {
-                    String companyName = doc.getString("fullName");
-                    String category = doc.getString("serviceCategory");
+                    String fullName = doc.getString("fullName");
+                    String email = doc.getString("email");
+                    String phone = doc.getString("phone");
                     String address = doc.getString("address");
-                    String logoUri = doc.getString("logoUri");
-
-                    tvCompanyName.setText(!TextUtils.isEmpty(companyName)
-                            ? companyName
-                            : "Company Name");
-                    tvServiceCategory.setText(!TextUtils.isEmpty(category)
-                            ? category
-                            : "Service Category");
-                    tvAddress.setText(!TextUtils.isEmpty(address)
-                            ? address
-                            : "Address");
-
-                    if (!TextUtils.isEmpty(logoUri)) {
-                        ImageLoader.load(ivCompanyLogo, logoUri, android.R.drawable.ic_menu_gallery);
+                    String photo = doc.getString("photoUrl");
+                    if (TextUtils.isEmpty(photo)) {
+                        photo = doc.getString("profilePhotoUri");
                     }
+                    if (TextUtils.isEmpty(photo) && user.getPhotoUrl() != null) {
+                        photo = user.getPhotoUrl().toString();
+                    }
+
+                    tvFullName.setText(!TextUtils.isEmpty(fullName) ? fullName : "Name");
+                    tvEmail.setText(!TextUtils.isEmpty(email) ? email : "Email");
+                    tvPhone.setText(!TextUtils.isEmpty(phone) ? phone : "Phone");
+                    tvAddress.setText(!TextUtils.isEmpty(address) ? address : "Address");
+                    ImageLoader.load(ivProfilePhoto, photo, android.R.drawable.ic_menu_myplaces);
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to load profile", Toast.LENGTH_SHORT).show());
     }
 
-    private void onLogoPicked(Uri uri) {
+    private void onPhotoPicked(Uri uri) {
         if (uri == null || user == null) {
             return;
         }
         pendingInput = uri;
         Uri source = copyToCacheUri(uri);
         if (source == null) {
-            applyLogo(uri);
+            applyPhoto(uri);
             return;
         }
         pendingSource = source;
@@ -115,17 +115,17 @@ public class ProviderProfileActivity extends AppCompatActivity {
     private void startCrop(Uri source) {
         Uri outputUri = createTempImageUri();
         if (outputUri == null) {
-            applyLogo(source);
+            applyPhoto(source);
             return;
         }
         pendingCropOutput = outputUri;
         UCrop.Options options = new UCrop.Options();
-        options.setToolbarTitle("Crop Logo");
+        options.setToolbarTitle("Crop Photo");
         options.setHideBottomControls(false);
         options.setCompressionFormat(android.graphics.Bitmap.CompressFormat.JPEG);
         options.setCompressionQuality(90);
         options.setFreeStyleCropEnabled(true);
-        options.setCircleDimmedLayer(false);
+        options.setCircleDimmedLayer(true);
 
         Intent cropIntent = UCrop.of(source, outputUri)
                 .withAspectRatio(1, 1)
@@ -139,7 +139,7 @@ public class ProviderProfileActivity extends AppCompatActivity {
         if (result.getResultCode() == RESULT_OK && result.getData() != null) {
             Uri output = UCrop.getOutput(result.getData());
             if (output != null) {
-                applyLogo(output);
+                applyPhoto(output);
                 return;
             }
         }
@@ -150,29 +150,29 @@ public class ProviderProfileActivity extends AppCompatActivity {
             }
         }
         if (pendingSource != null) {
-            applyLogo(pendingSource);
+            applyPhoto(pendingSource);
         } else if (pendingInput != null) {
-            applyLogo(pendingInput);
+            applyPhoto(pendingInput);
         }
     }
 
-    private void applyLogo(Uri uri) {
+    private void applyPhoto(Uri uri) {
         if (uri == null || user == null) {
             return;
         }
-        ImageLoader.load(ivCompanyLogo, uri.toString(), android.R.drawable.ic_menu_gallery);
-        uploadLogoToStorage(uri);
+        ImageLoader.load(ivProfilePhoto, uri.toString(), android.R.drawable.ic_menu_myplaces);
+        uploadPhotoToStorage(uri);
     }
 
-    private void uploadLogoToStorage(Uri uri) {
+    private void uploadPhotoToStorage(Uri uri) {
         if (uri == null || user == null) {
             return;
         }
         StorageReference ref = FirebaseStorage.getInstance()
                 .getReference()
-                .child("providers")
+                .child("users")
                 .child(user.getUid())
-                .child("logo.jpg");
+                .child("profile.jpg");
         ref.putFile(uri)
                 .continueWithTask(task -> {
                     if (!task.isSuccessful()) {
@@ -180,37 +180,55 @@ public class ProviderProfileActivity extends AppCompatActivity {
                     }
                     return ref.getDownloadUrl();
                 })
-                .addOnSuccessListener(downloadUri -> saveLogoUrl(downloadUri.toString()))
+                .addOnSuccessListener(downloadUri -> savePhotoUrl(downloadUri.toString()))
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Logo upload failed", e);
-                    Toast.makeText(this, "Failed to upload logo: " + e.getMessage(),
+                    Log.e(TAG, "Photo upload failed", e);
+                    Toast.makeText(this, "Failed to upload photo: " + e.getMessage(),
                             Toast.LENGTH_LONG).show();
                 });
     }
 
-    private void saveLogoUrl(String url) {
+    private void savePhotoUrl(String url) {
         if (TextUtils.isEmpty(url) || user == null) {
             return;
         }
         java.util.Map<String, Object> updates = new java.util.HashMap<>();
-        updates.put("logoUri", url);
+        updates.put("profilePhotoUri", url);
         FirebaseFirestore.getInstance()
-                .collection("providers")
+                .collection("users")
                 .document(user.getUid())
                 .set(updates, com.google.firebase.firestore.SetOptions.merge())
                 .addOnSuccessListener(unused ->
-                        Toast.makeText(this, "Logo updated", Toast.LENGTH_SHORT).show())
+                        Toast.makeText(this, "Photo updated", Toast.LENGTH_SHORT).show())
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to save logo", e);
-                    Toast.makeText(this, "Failed to save logo: " + e.getMessage(),
+                    Log.e(TAG, "Failed to save photo URL", e);
+                    Toast.makeText(this, "Failed to save photo: " + e.getMessage(),
                             Toast.LENGTH_LONG).show();
                 });
+
+        updateConversationAvatars(url);
+    }
+
+    private void updateConversationAvatars(String url) {
+        if (TextUtils.isEmpty(url) || user == null) {
+            return;
+        }
+        FirebaseFirestore.getInstance()
+                .collection("conversations")
+                .whereEqualTo("userId", user.getUid())
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : snapshot.getDocuments()) {
+                        doc.getReference().update("userLogoUri", url);
+                    }
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to update conversation avatars", e));
     }
 
     private Uri createTempImageUri() {
         try {
             java.io.File tempFile = java.io.File.createTempFile(
-                    "logo_crop_", ".jpg", getCacheDir());
+                    "user_crop_", ".jpg", getCacheDir());
             return FileProvider.getUriForFile(
                     this, getPackageName() + ".fileprovider", tempFile);
         } catch (Exception e) {
@@ -242,5 +260,4 @@ public class ProviderProfileActivity extends AppCompatActivity {
             return null;
         }
     }
-
 }

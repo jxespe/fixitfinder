@@ -1,6 +1,5 @@
 package com.example.fixitfinderapp;
 
-import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.EditText;
@@ -21,6 +20,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.Timestamp;
 
 import java.util.ArrayList;
@@ -32,6 +32,9 @@ public class ChatActivity extends AppCompatActivity {
     private ChatMessageAdapter adapter;
     private String conversationId;
     private FirebaseUser currentUser;
+    private ImageView ivAvatar;
+    private ListenerRegistration headerListener;
+    private String headerAvatarUri;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +46,7 @@ public class ChatActivity extends AppCompatActivity {
         String avatarUri = getIntent().getStringExtra("avatarUri");
 
         ImageButton btnBack = findViewById(R.id.btnBack);
-        ImageView ivAvatar = findViewById(R.id.ivChatAvatar);
+        ivAvatar = findViewById(R.id.ivChatAvatar);
         TextView tvTitle = findViewById(R.id.tvChatTitle);
         RecyclerView recyclerView = findViewById(R.id.recyclerChat);
         EditText edtMessage = findViewById(R.id.edtMessage);
@@ -57,11 +60,7 @@ public class ChatActivity extends AppCompatActivity {
         }
 
         tvTitle.setText(!TextUtils.isEmpty(title) ? title : "Chat");
-        if (!TextUtils.isEmpty(avatarUri)) {
-            ivAvatar.setImageURI(Uri.parse(avatarUri));
-        } else {
-            ivAvatar.setImageResource(android.R.drawable.ic_menu_myplaces);
-        }
+        ImageLoader.load(ivAvatar, avatarUri, android.R.drawable.ic_menu_myplaces);
 
         adapter = new ChatMessageAdapter(messages, currentUser.getUid());
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -82,8 +81,18 @@ public class ChatActivity extends AppCompatActivity {
             finish();
             return;
         }
+        listenForHeaderAvatar();
         markConversationRead();
         listenForMessages();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (headerListener != null) {
+            headerListener.remove();
+            headerListener = null;
+        }
     }
 
     @Override
@@ -166,5 +175,65 @@ public class ChatActivity extends AppCompatActivity {
                 .collection("conversations")
                 .document(conversationId)
                 .update(field, 0);
+    }
+
+    private void listenForHeaderAvatar() {
+        if (TextUtils.isEmpty(conversationId) || ivAvatar == null) {
+            return;
+        }
+        String role = SessionManager.getRole(this);
+        headerListener = FirebaseFirestore.getInstance()
+                .collection("conversations")
+                .document(conversationId)
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null || snapshot == null || !snapshot.exists()) {
+                        return;
+                    }
+                    String userId = snapshot.getString("userId");
+                    String providerId = snapshot.getString("providerId");
+                    String avatar = "provider".equalsIgnoreCase(role)
+                            ? snapshot.getString("userLogoUri")
+                            : snapshot.getString("providerLogoUri");
+                    if (TextUtils.isEmpty(avatar)) {
+                        if ("provider".equalsIgnoreCase(role)) {
+                            loadAvatarFromProfile("users", userId);
+                        } else {
+                            loadAvatarFromProfile("providers", providerId);
+                        }
+                        return;
+                    }
+                    if (!avatar.equals(headerAvatarUri)) {
+                        headerAvatarUri = avatar;
+                        ImageLoader.load(ivAvatar, avatar, android.R.drawable.ic_menu_myplaces);
+                    }
+                });
+    }
+
+    private void loadAvatarFromProfile(String collection, String docId) {
+        if (TextUtils.isEmpty(collection) || TextUtils.isEmpty(docId)) {
+            return;
+        }
+        FirebaseFirestore.getInstance()
+                .collection(collection)
+                .document(docId)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    String avatar = null;
+                    if ("users".equals(collection)) {
+                        avatar = doc.getString("photoUrl");
+                        if (TextUtils.isEmpty(avatar)) {
+                            avatar = doc.getString("profilePhotoUri");
+                        }
+                    } else if ("providers".equals(collection)) {
+                        avatar = doc.getString("logoUri");
+                    }
+                    if (TextUtils.isEmpty(avatar)) {
+                        return;
+                    }
+                    if (!avatar.equals(headerAvatarUri)) {
+                        headerAvatarUri = avatar;
+                        ImageLoader.load(ivAvatar, avatar, android.R.drawable.ic_menu_myplaces);
+                    }
+                });
     }
 }

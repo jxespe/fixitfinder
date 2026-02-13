@@ -11,7 +11,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.fixitfinderapp.auth.ProviderLoginActivity;
 import com.example.fixitfinderapp.payment.PaymentActivity;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 
 public class ProviderSettingsActivity extends AppCompatActivity {
@@ -56,29 +55,18 @@ public class ProviderSettingsActivity extends AppCompatActivity {
         rowLogout.setOnClickListener(v -> {
             FirebaseAuth.getInstance().signOut();
             SessionManager.clear(this);
-            startActivity(new Intent(this, ProviderLoginActivity.class));
-            finish();
+            Intent intent = new Intent(this, ProviderLoginActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finishAffinity();
         });
 
-        BottomNavigationView bottomNavigation = findViewById(R.id.bottomNavigation);
-        bottomNavigation.setSelectedItemId(R.id.nav_settings);
-        bottomNavigation.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.nav_home) {
-                startActivity(new Intent(this, DashboardActivity.class));
-                finish();
-                return true;
-            } else if (id == R.id.nav_history) {
-                startActivity(new Intent(this, ProviderHistoryActivity.class));
-                finish();
-                return true;
-            } else if (id == R.id.nav_messages) {
-                startActivity(new Intent(this, MessagesActivity.class));
-                return true;
-            } else if (id == R.id.nav_settings) {
-                return true;
-            }
-            return false;
-        });
+        NavigationHelper.setupBottomNav(this, R.id.nav_settings);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        NavigationHelper.ensureLoggedIn(this);
     }
 }

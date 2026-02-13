@@ -11,7 +11,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.fixitfinderapp.auth.LoginActivity;
 import com.example.fixitfinderapp.payment.PaymentActivity;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 
 public class UserSettingsActivity extends AppCompatActivity {
@@ -33,7 +32,7 @@ public class UserSettingsActivity extends AppCompatActivity {
         LinearLayout rowLogout = findViewById(R.id.rowLogout);
 
         rowProfileInfo.setOnClickListener(v ->
-                Toast.makeText(this, "Profile info coming soon", Toast.LENGTH_SHORT).show());
+                startActivity(new Intent(this, UserProfileActivity.class)));
 
         rowPaymentMethods.setOnClickListener(v ->
                 startActivity(new Intent(this, PaymentActivity.class)));
@@ -41,8 +40,7 @@ public class UserSettingsActivity extends AppCompatActivity {
         rowPrivacySecurity.setOnClickListener(v ->
                 startActivity(new Intent(this, PrivacyReportActivity.class)));
 
-        rowBugReport.setOnClickListener(v ->
-                startActivity(new Intent(this, PrivacyReportActivity.class)));
+        rowBugReport.setOnClickListener(v -> openSupportEmail());
 
         rowFacebook.setOnClickListener(v -> {
             Intent browserIntent = new Intent(Intent.ACTION_VIEW,
@@ -50,36 +48,60 @@ public class UserSettingsActivity extends AppCompatActivity {
             startActivity(browserIntent);
         });
 
-        rowClearCache.setOnClickListener(v ->
-                Toast.makeText(this, "Cache cleared", Toast.LENGTH_SHORT).show());
+        rowClearCache.setOnClickListener(v -> {
+            boolean cleared = clearAppCache();
+            Toast.makeText(this, cleared ? "Cache cleared" : "Unable to clear cache",
+                    Toast.LENGTH_SHORT).show();
+        });
 
         rowLogout.setOnClickListener(v -> {
             FirebaseAuth.getInstance().signOut();
             SessionManager.clear(this);
-            startActivity(new Intent(this, LoginActivity.class));
-            finish();
+            Intent intent = new Intent(this, LoginActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finishAffinity();
         });
 
-        BottomNavigationView bottomNavigation = findViewById(R.id.bottomNavigation);
-        bottomNavigation.setSelectedItemId(R.id.nav_settings);
-        bottomNavigation.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.nav_home) {
-                startActivity(new Intent(this, UserDashboardActivity.class));
-                finish();
-                return true;
-            } else if (id == R.id.nav_history) {
-                startActivity(new Intent(this, HistoryActivity.class));
-                finish();
-                return true;
-            } else if (id == R.id.nav_messages) {
-                startActivity(new Intent(this, MessagesActivity.class));
-                return true;
-            } else if (id == R.id.nav_settings) {
-                return true;
-            }
-            return false;
-        });
+        NavigationHelper.setupBottomNav(this, R.id.nav_settings);
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        NavigationHelper.ensureLoggedIn(this);
+    }
+
+    private void openSupportEmail() {
+        Intent intent = new Intent(Intent.ACTION_SENDTO);
+        intent.setData(Uri.parse("mailto:support@fixitfinderapp.com"));
+        intent.putExtra(Intent.EXTRA_SUBJECT, "FixIt Finder - Bug Report");
+        intent.putExtra(Intent.EXTRA_TEXT, "Describe the issue here...");
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivity(intent);
+        } else {
+            Toast.makeText(this, "No email app found.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private boolean clearAppCache() {
+        return deleteDir(getCacheDir());
+    }
+
+    private boolean deleteDir(java.io.File dir) {
+        if (dir == null) {
+            return false;
+        }
+        java.io.File[] files = dir.listFiles();
+        if (files != null) {
+            for (java.io.File file : files) {
+                if (file.isDirectory()) {
+                    deleteDir(file);
+                } else {
+                    file.delete();
+                }
+            }
+        }
+        return dir.delete();
+    }
 }

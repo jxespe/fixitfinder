@@ -13,7 +13,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.fixitfinderapp.adapters.ConversationAdapter;
 import com.example.fixitfinderapp.models.ConversationItem;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -51,35 +50,14 @@ public class MessagesActivity extends AppCompatActivity {
             role = savedRole;
         }
 
-        setupBottomNavigation();
+        NavigationHelper.setupBottomNav(this, R.id.nav_messages);
         loadConversations();
     }
 
-    private void setupBottomNavigation() {
-        BottomNavigationView bottomNavigation = findViewById(R.id.bottomNavigation);
-        if (bottomNavigation == null) {
-            return;
-        }
-        bottomNavigation.setSelectedItemId(R.id.nav_messages);
-        bottomNavigation.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.nav_home) {
-                startActivity(new Intent(this,
-                        "provider".equals(role) ? DashboardActivity.class : UserDashboardActivity.class));
-                return true;
-            } else if (id == R.id.nav_history) {
-                startActivity(new Intent(this,
-                        "provider".equals(role) ? ProviderHistoryActivity.class : HistoryActivity.class));
-                return true;
-            } else if (id == R.id.nav_messages) {
-                return true;
-            } else if (id == R.id.nav_settings) {
-                startActivity(new Intent(this,
-                        "provider".equals(role) ? ProviderSettingsActivity.class : UserSettingsActivity.class));
-                return true;
-            }
-            return false;
-        });
+    @Override
+    protected void onStart() {
+        super.onStart();
+        NavigationHelper.ensureLoggedIn(this);
     }
 
     private void loadConversations() {
@@ -103,6 +81,8 @@ public class MessagesActivity extends AppCompatActivity {
                         String userName = doc.getString("userName");
                         String providerLogo = doc.getString("providerLogoUri");
                         String userLogo = doc.getString("userLogoUri");
+                        String providerId = doc.getString("providerId");
+                        String userId = doc.getString("userId");
                         Long unreadUser = doc.getLong("unreadUserCount");
                         Long unreadProvider = doc.getLong("unreadProviderCount");
                         Timestamp last = doc.getTimestamp("lastMessageAt");
@@ -123,6 +103,13 @@ public class MessagesActivity extends AppCompatActivity {
                                 avatar,
                                 lastMillis,
                                 unreadCount));
+
+                        // Refresh avatar from the other user's profile to keep it current.
+                        if ("provider".equals(role)) {
+                            refreshAvatar(conversationId, "users", userId, avatar);
+                        } else {
+                            refreshAvatar(conversationId, "providers", providerId, avatar);
+                        }
                     }
                     Collections.sort(items, Comparator.comparingLong(o -> -o.lastMessageAt));
                     adapter.notifyDataSetChanged();
@@ -163,5 +150,54 @@ public class MessagesActivity extends AppCompatActivity {
             return Integer.MAX_VALUE;
         }
         return value.intValue();
+    }
+
+    private void refreshAvatar(String conversationId, String collection, String docId, String fallback) {
+        if (TextUtils.isEmpty(conversationId) || TextUtils.isEmpty(collection) || TextUtils.isEmpty(docId)) {
+            return;
+        }
+        FirebaseFirestore.getInstance()
+                .collection(collection)
+                .document(docId)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    String avatar = null;
+                    if ("users".equals(collection)) {
+                        avatar = doc.getString("photoUrl");
+                        if (TextUtils.isEmpty(avatar)) {
+                            avatar = doc.getString("profilePhotoUri");
+                        }
+                    } else if ("providers".equals(collection)) {
+                        avatar = doc.getString("logoUri");
+                    }
+                    if (TextUtils.isEmpty(avatar)) {
+                        avatar = fallback;
+                    }
+                    if (TextUtils.isEmpty(avatar)) {
+                        return;
+                    }
+                    updateItemAvatar(conversationId, avatar);
+                });
+    }
+
+    private void updateItemAvatar(String conversationId, String avatarUri) {
+        for (int i = 0; i < items.size(); i++) {
+            ConversationItem current = items.get(i);
+            if (conversationId.equals(current.conversationId)) {
+                if (avatarUri.equals(current.avatarUri)) {
+                    return;
+                }
+                ConversationItem updated = new ConversationItem(
+                        current.conversationId,
+                        current.name,
+                        current.preview,
+                        avatarUri,
+                        current.lastMessageAt,
+                        current.unreadCount);
+                items.set(i, updated);
+                adapter.notifyItemChanged(i);
+                return;
+            }
+        }
     }
 }

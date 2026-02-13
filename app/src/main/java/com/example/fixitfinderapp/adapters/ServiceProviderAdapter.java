@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.fixitfinderapp.ImageLoader;
 import com.example.fixitfinderapp.R;
 import com.example.fixitfinderapp.models.ServiceProviderProfile;
 
@@ -50,11 +51,7 @@ public class ServiceProviderAdapter extends RecyclerView.Adapter<ServiceProvider
         holder.price.setText("Contact for pricing");
         holder.rating.setRating(0f);
         holder.rating.setIsIndicator(true);
-        if (provider.logoUri != null && !provider.logoUri.isEmpty()) {
-            holder.logo.setImageURI(android.net.Uri.parse(provider.logoUri));
-        } else {
-            holder.logo.setImageResource(android.R.drawable.ic_menu_myplaces);
-        }
+        ImageLoader.load(holder.logo, provider.logoUri, android.R.drawable.ic_menu_myplaces);
         holder.itemView.setOnClickListener(v -> {
             android.content.Intent intent =
                     new android.content.Intent(v.getContext(),

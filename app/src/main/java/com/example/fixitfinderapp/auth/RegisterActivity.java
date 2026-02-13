@@ -200,6 +200,7 @@ public class RegisterActivity extends AppCompatActivity {
         userData.put("role", "user");
         userData.put("phoneVerified", false);
         userData.put("createdAt", System.currentTimeMillis());
+        maybePutPhotoUrl(userData, FirebaseAuth.getInstance().getCurrentUser());
 
         // Save to Firestore
         db.collection("users")
@@ -395,6 +396,7 @@ public class RegisterActivity extends AppCompatActivity {
         userData.put("authProvider", "google.com");
         userData.put("phone", "");
         userData.put("address", "");
+        maybePutPhotoUrl(userData, user);
 
         saveLastOAuthEmail(email);
 
@@ -472,6 +474,7 @@ public class RegisterActivity extends AppCompatActivity {
         userData.put("authProvider", providerId);
         userData.put("phone", "");
         userData.put("address", "");
+        maybePutPhotoUrl(userData, user);
 
         saveLastOAuthEmail(email);
 
@@ -499,5 +502,15 @@ public class RegisterActivity extends AppCompatActivity {
         }
         SharedPreferences prefs = getSharedPreferences("auth_prefs", MODE_PRIVATE);
         prefs.edit().putString("last_oauth_email", email).apply();
+    }
+
+    private void maybePutPhotoUrl(Map<String, Object> userData, FirebaseUser user) {
+        if (user == null || userData == null || user.getPhotoUrl() == null) {
+            return;
+        }
+        String photoUrl = user.getPhotoUrl().toString();
+        if (!TextUtils.isEmpty(photoUrl)) {
+            userData.put("photoUrl", photoUrl);
+        }
     }
 }

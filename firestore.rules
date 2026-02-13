@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isParticipant() {
+      return resource.data.userId == request.auth.uid
+          || resource.data.providerId == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /providers/{providerId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == providerId;
+    }
+
+    match /bookings/{bookingId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /conversations/{conversationId} {
+      allow read, update: if isSignedIn() && isParticipant();
+      allow create: if isSignedIn()
+        && (request.resource.data.userId == request.auth.uid
+            || request.resource.data.providerId == request.auth.uid);
+
+      match /messages/{messageId} {
+        allow read, create: if isSignedIn()
+          && (get(/databases/$(database)/documents/conversations/$(conversationId)).data.userId
+                == request.auth.uid
+              || get(/databases/$(database)/documents/conversations/$(conversationId)).data.providerId
+                == request.auth.uid);
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
