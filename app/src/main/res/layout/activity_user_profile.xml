@@ -25,7 +25,7 @@
         android:layout_marginStart="12dp"
         android:text="Profile Info"
         android:textColor="@color/color_text_dark"
-        android:textSize="20sp"
+        android:textSize="25sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="@id/btnBack"
         app:layout_constraintEnd_toEndOf="parent"

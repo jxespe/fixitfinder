@@ -44,7 +44,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Earnings"
-                    android:textSize="18sp"
+                    android:textSize="25sp"
                     android:textStyle="bold"
                     android:textColor="@color/white" />
             </LinearLayout>
@@ -114,7 +114,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Completed Services"
-                android:textSize="16sp"
+                android:textSize="25sp"
                 android:textStyle="bold"
                 android:textColor="@color/white"
                 android:background="@color/color_primary"
@@ -145,7 +145,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Monthly Revenue"
-                android:textSize="16sp"
+                android:textSize="25sp"
                 android:textStyle="bold"
                 android:textColor="@color/white"
                 android:background="@color/color_primary"

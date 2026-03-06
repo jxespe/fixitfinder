@@ -11,11 +11,19 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.fixitfinderapp.adapters.ProviderServiceAdapter;
+import com.example.fixitfinderapp.models.ProviderServiceItem;
+import com.example.fixitfinderapp.notifications.ReminderScheduler;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DashboardActivity extends AppCompatActivity {
 
@@ -23,6 +31,8 @@ public class DashboardActivity extends AppCompatActivity {
     private TextView tvNewServicesCount;
     private TextView tvUpcomingServicesTitle;
     private TextView tvUpcomingServicesCount;
+    private final List<ProviderServiceItem> services = new ArrayList<>();
+    private ProviderServiceAdapter serviceAdapter;
     private int pendingCount = 0;
     private int upcomingCount = 0;
 
@@ -33,7 +43,6 @@ public class DashboardActivity extends AppCompatActivity {
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         ImageView ivCompanyLogo = findViewById(R.id.ivCompanyLogo);
-        ImageView ivWhyLogo = findViewById(R.id.ivWhyLogo);
         TextView tvCompanyName = findViewById(R.id.tvCompanyName);
         TextView tvVerifiedStatus = findViewById(R.id.tvVerifiedStatus);
         TextView tvWhyReason = findViewById(R.id.tvWhyReason);
@@ -42,10 +51,13 @@ public class DashboardActivity extends AppCompatActivity {
         TextView tvAvgResponseTime = findViewById(R.id.tvAvgResponseTime);
         Button btnServiceStatus = findViewById(R.id.btnServiceStatus);
         Button btnEditServices = findViewById(R.id.btnEditServices);
+        RecyclerView recyclerViewServices = findViewById(R.id.recyclerViewServices);
         tvNewServicesTitle = findViewById(R.id.tvNewServicesTitle);
         tvNewServicesCount = findViewById(R.id.tvNewServicesCount);
         tvUpcomingServicesTitle = findViewById(R.id.tvUpcomingServicesTitle);
         tvUpcomingServicesCount = findViewById(R.id.tvUpcomingServicesCount);
+
+        setupServicesRecycler(recyclerViewServices);
 
         if (user != null) {
             FirebaseFirestore.getInstance()
@@ -79,7 +91,6 @@ public class DashboardActivity extends AppCompatActivity {
                         updateServiceStatusButton(btnServiceStatus, serviceActive != null && serviceActive);
                         if (!TextUtils.isEmpty(logoUri)) {
                             ImageLoader.load(ivCompanyLogo, logoUri, android.R.drawable.ic_menu_myplaces);
-                            ImageLoader.load(ivWhyLogo, logoUri, android.R.drawable.ic_menu_myplaces);
                         }
                     });
         }
@@ -98,13 +109,14 @@ public class DashboardActivity extends AppCompatActivity {
                 openEarnings("month", "Monthly Earnings"));
 
         btnEditServices.setOnClickListener(v ->
-                Toast.makeText(this, "Service management coming soon", Toast.LENGTH_SHORT).show());
+                startActivity(new Intent(this, ProviderServicesActivity.class)));
 
         btnServiceStatus.setOnClickListener(v -> toggleServiceStatus(btnServiceStatus));
 
         if (user != null) {
             loadProviderStats(user.getUid(), tvTotalBookings, tvAvgResponseTime);
             loadDashboardCounts(user.getUid());
+            loadProviderServices(user.getUid());
         }
 
         NavigationHelper.setupBottomNav(this, R.id.nav_home);
@@ -114,6 +126,10 @@ public class DashboardActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         NavigationHelper.ensureLoggedIn(this);
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            ReminderScheduler.scheduleProviderAcceptedReminders(this, user.getUid());
+        }
     }
 
     private void openJobs(String mode, String title) {
@@ -255,5 +271,44 @@ public class DashboardActivity extends AppCompatActivity {
             }
         }
         editor.apply();
+    }
+
+    private void setupServicesRecycler(RecyclerView recyclerViewServices) {
+        if (recyclerViewServices == null) {
+            return;
+        }
+        recyclerViewServices.setLayoutManager(
+                new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        serviceAdapter = new ProviderServiceAdapter(services, false, false, null);
+        recyclerViewServices.setAdapter(serviceAdapter);
+    }
+
+    private void loadProviderServices(String providerId) {
+        FirebaseFirestore.getInstance()
+                .collection("providers")
+                .document(providerId)
+                .collection("services")
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    services.clear();
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : snapshot.getDocuments()) {
+                        String id = doc.getId();
+                        String name = doc.getString("name");
+                        String imageUri = doc.getString("imageUri");
+                        String description = doc.getString("description");
+                        double price = 0d;
+                        Object priceObj = doc.get("price");
+                        if (priceObj instanceof Number) {
+                            price = ((Number) priceObj).doubleValue();
+                        }
+                        services.add(new ProviderServiceItem(id, name, price, imageUri, description));
+                    }
+                    if (serviceAdapter != null) {
+                        serviceAdapter.notifyDataSetChanged();
+                    }
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Failed to load services: " + e.getMessage(),
+                                Toast.LENGTH_LONG).show());
     }
 }

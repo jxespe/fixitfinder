@@ -44,7 +44,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Booking and Scheduling"
-                    android:textSize="18sp"
+                    android:textSize="25sp"
                     android:textStyle="bold"
                     android:textColor="@color/white" />
             </LinearLayout>
@@ -55,7 +55,7 @@
                 android:layout_height="wrap_content"
                 android:text="Choose Date &amp; Time"
                 android:textStyle="bold"
-                android:textSize="16sp"
+                android:textSize="25sp"
                 android:textColor="@android:color/black"
                 android:layout_marginTop="16dp"
                 android:layout_marginStart="16dp"
@@ -85,6 +85,8 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
+                android:dateTextAppearance="@style/CalendarDateText"
+                android:weekDayTextAppearance="@style/CalendarWeekdayText"
                 app:layout_constraintTop_toBottomOf="@id/tvSelectedDate"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
@@ -94,12 +96,27 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="Select an available time."
-                android:textSize="12sp"
+                android:textSize="14sp"
                 android:textColor="#757575"
                 android:layout_marginTop="8dp"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
                 app:layout_constraintTop_toBottomOf="@id/calendarView"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <TextView
+                android:id="@+id/tvTimeSlotTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Time Slot"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@android:color/black"
+                android:layout_marginTop="12dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                app:layout_constraintTop_toBottomOf="@id/tvDateStatus"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
@@ -111,7 +128,7 @@
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
                 android:orientation="vertical"
-                app:layout_constraintTop_toBottomOf="@id/tvDateStatus"
+                app:layout_constraintTop_toBottomOf="@id/tvTimeSlotTitle"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
 
@@ -129,13 +146,14 @@
 
                         <TextView
                             android:id="@+id/tvAmHeader"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="AM"
                             android:textStyle="bold"
-                            android:textSize="14sp"
+                            android:textSize="16sp"
                             android:textColor="@android:color/black"
-                            android:layout_marginBottom="6dp" />
+                            android:layout_marginBottom="6dp"
+                            android:gravity="center_horizontal" />
 
                         <ScrollView
                             android:layout_width="match_parent"
@@ -162,13 +180,14 @@
 
                         <TextView
                             android:id="@+id/tvPmHeader"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="PM"
                             android:textStyle="bold"
-                            android:textSize="14sp"
+                            android:textSize="16sp"
                             android:textColor="@android:color/black"
-                            android:layout_marginBottom="6dp" />
+                            android:layout_marginBottom="6dp"
+                            android:gravity="center_horizontal" />
 
                         <ScrollView
                             android:layout_width="match_parent"
@@ -199,8 +218,23 @@
                 android:layout_marginTop="16dp"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
-                android:layout_marginBottom="80dp"
                 app:layout_constraintTop_toBottomOf="@id/layoutTimes"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <Button
+                android:id="@+id/btnBackToServices"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Back to Services"
+                android:textColor="@color/color_primary"
+                android:background="@drawable/button_outline_red"
+                android:padding="12dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="80dp"
+                app:layout_constraintTop_toBottomOf="@id/btnConfirmBooking"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 

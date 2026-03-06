@@ -16,6 +16,8 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 import android.text.TextUtils;
 
+import com.example.fixitfinderapp.notifications.ReminderScheduler;
+
 
 /**
  * User home/dashboard screen that shows the service categories grid.
@@ -34,10 +36,10 @@ public class UserDashboardActivity extends AppCompatActivity {
 
         TextView tvGreeting = findViewById(R.id.tvGreeting);
         setGreeting(tvGreeting);
-        ImageView ivProfilePic = findViewById(R.id.ivProfilePic);
         ImageView ivUserProfile = findViewById(R.id.ivUserProfile);
-        loadProfilePhoto(ivProfilePic, ivUserProfile);
-        wireProfileTaps(ivProfilePic, ivUserProfile);
+        loadProfilePhoto(ivUserProfile);
+        wireProfileTaps(ivUserProfile);
+        wireNotificationsIcon();
 
         wireCategoryCards();
 
@@ -48,6 +50,10 @@ public class UserDashboardActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         NavigationHelper.ensureLoggedIn(this);
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            ReminderScheduler.scheduleAcceptedReminders(this, user.getUid());
+        }
     }
 
     private void wireCategoryCards() {
@@ -80,6 +86,15 @@ public class UserDashboardActivity extends AppCompatActivity {
                 view.setOnClickListener(listener);
             }
         }
+    }
+
+    private void wireNotificationsIcon() {
+        ImageView bell = findViewById(R.id.ivHelp);
+        if (bell == null) {
+            return;
+        }
+        bell.setOnClickListener(v ->
+                startActivity(new Intent(this, NotificationsActivity.class)));
     }
 
     private void openCategory(String name) {

@@ -9,5 +9,20 @@
         <item name="colorOnPrimary">@color/color_background</item>
     </style>
 
+    <style name="CalendarDateText" parent="@android:style/TextAppearance.Material.Large">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@android:color/black</item>
+    </style>
+
+    <style name="CalendarWeekdayText" parent="@android:style/TextAppearance.Material.Medium">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@android:color/black</item>
+    </style>
+
+    <style name="CalendarHeaderText" parent="@android:style/TextAppearance.Material.Large">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@android:color/black</item>
+    </style>
+
     <style name="Theme.FixItFinderApp" parent="Base.Theme.FixItFinderApp" />
 </resources>

@@ -9,6 +9,7 @@ import com.example.fixitfinderapp.auth.LoginActivity;
 import com.example.fixitfinderapp.auth.OtpActivity;
 import com.example.fixitfinderapp.auth.ProviderLoginActivity;
 import com.example.fixitfinderapp.notifications.MessagingHelper;
+import com.example.fixitfinderapp.notifications.ReminderWorkScheduler;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -67,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                         SessionManager.saveRole(this, role != null ? role : "user");
                         MessagingHelper.syncToken(this);
+                        ReminderWorkScheduler.schedule(this);
                         if ("provider".equalsIgnoreCase(role)) {
                             startActivity(new Intent(this, DashboardActivity.class));
                         } else {
@@ -107,6 +109,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     SessionManager.saveRole(this, "provider");
                     MessagingHelper.syncToken(this);
+                    ReminderWorkScheduler.schedule(this);
                     startActivity(new Intent(this, DashboardActivity.class));
                     finish();
                 })

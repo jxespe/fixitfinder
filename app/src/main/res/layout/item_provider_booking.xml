@@ -44,6 +44,24 @@
         android:layout_marginTop="2dp" />
 
     <TextView
+        android:id="@+id/tvJobDescription"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Job: Replace circuit breaker"
+        android:textSize="12sp"
+        android:textColor="#757575"
+        android:layout_marginTop="2dp" />
+
+    <TextView
+        android:id="@+id/tvJobPrice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Price: ₱1500"
+        android:textSize="12sp"
+        android:textColor="#757575"
+        android:layout_marginTop="2dp" />
+
+    <TextView
         android:id="@+id/tvBookingLocation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

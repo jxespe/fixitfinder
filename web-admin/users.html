@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fix It Finder Admin - Users</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .users-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 40px;
+        padding: 40px 0 20px;
+      }
+
+      .user-avatar {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        background: #efefef;
+        display: grid;
+        place-items: center;
+        font-weight: 600;
+        color: #444;
+        font-size: 28px;
+        margin: 0 auto;
+      }
+
+      @media (max-width: 900px) {
+        .users-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 600px) {
+        .users-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <div class="brand">
+          <img src="../app/src/main/res/drawable/ic_banner.png" alt="Fix It Finder" />
+          <div class="brand-title">
+            <span>Admin Panel</span>
+            <span>Fix It Finder</span>
+          </div>
+        </div>
+        <nav class="nav-pills">
+          <a class="nav-pill" href="./dashboard.html">Dashboard</a>
+          <a class="nav-pill is-active" href="./users.html">Users</a>
+          <a class="nav-pill" href="./service-providers.html">Service Providers</a>
+          <a class="nav-pill" href="./technicians.html">Technicians</a>
+          <a class="nav-pill" href="./reports.html">Report</a>
+        </nav>
+        <a class="logout-pill" href="./index.html">Log Out <span>⎋</span></a>
+      </header>
+
+      <div class="container">
+        <div class="card">
+          <div class="users-grid">
+            <div class="user-avatar">JN</div>
+            <div class="user-avatar">MJ</div>
+            <div class="user-avatar">KL</div>
+            <div class="user-avatar">RA</div>
+            <div class="user-avatar">SB</div>
+            <div class="user-avatar">CR</div>
+            <div class="user-avatar">LP</div>
+            <div class="user-avatar">QZ</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

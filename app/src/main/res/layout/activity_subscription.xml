@@ -40,7 +40,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Subscribe Now!"
-            android:textSize="32sp"
+            android:textSize="25sp"
             android:textStyle="bold"
             android:textColor="@color/white"
             android:layout_marginBottom="16dp" />
@@ -103,7 +103,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Monthly"
-                android:textSize="18sp"
+                android:textSize="25sp"
                 android:textStyle="bold"
                 android:textColor="@android:color/black" />
 
@@ -120,7 +120,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="₱149/month"
-            android:textSize="18sp"
+            android:textSize="25sp"
             android:textStyle="bold"
             android:textColor="@android:color/black" />
     </LinearLayout>
@@ -165,7 +165,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Annual"
-                    android:textSize="18sp"
+                    android:textSize="25sp"
                     android:textStyle="bold"
                     android:textColor="@android:color/black" />
 
@@ -192,7 +192,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="₱1499/year"
-            android:textSize="18sp"
+            android:textSize="25sp"
             android:textStyle="bold"
             android:textColor="@android:color/black" />
     </LinearLayout>

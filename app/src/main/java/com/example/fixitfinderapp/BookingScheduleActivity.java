@@ -43,11 +43,17 @@ public class BookingScheduleActivity extends AppCompatActivity {
     private TextView tvSelectedDate;
     private TextView tvDateStatus;
     private Button btnConfirm;
+    private CalendarView calendarView;
     private String providerId;
     private String providerName;
     private String serviceCategory;
     private String providerAddress;
     private String logoUri;
+    private String serviceId;
+    private String serviceName;
+    private double servicePrice;
+    private String serviceImageUri;
+    private String serviceDescription;
     private String selectedDateKey;
     private String selectedTime;
     private final Set<String> bookedTimes = new HashSet<>();
@@ -63,17 +69,26 @@ public class BookingScheduleActivity extends AppCompatActivity {
         serviceCategory = getIntent().getStringExtra("serviceCategory");
         providerAddress = getIntent().getStringExtra("address");
         logoUri = getIntent().getStringExtra("logoUri");
+        serviceId = getIntent().getStringExtra("serviceId");
+        serviceName = getIntent().getStringExtra("serviceName");
+        servicePrice = getIntent().getDoubleExtra("servicePrice", 0d);
+        serviceImageUri = getIntent().getStringExtra("serviceImageUri");
+        serviceDescription = getIntent().getStringExtra("serviceDescription");
 
         ImageButton btnBack = findViewById(R.id.btnBack);
-        CalendarView calendarView = findViewById(R.id.calendarView);
+        calendarView = findViewById(R.id.calendarView);
         layoutAmSlots = findViewById(R.id.layoutAmSlots);
         layoutPmSlots = findViewById(R.id.layoutPmSlots);
         tvSelectedDate = findViewById(R.id.tvSelectedDate);
         tvDateStatus = findViewById(R.id.tvDateStatus);
         btnConfirm = findViewById(R.id.btnConfirmBooking);
+        Button btnBackToServices = findViewById(R.id.btnBackToServices);
 
         btnBack.setOnClickListener(v -> finish());
         btnConfirm.setOnClickListener(v -> submitBooking());
+        if (btnBackToServices != null) {
+            btnBackToServices.setOnClickListener(v -> finish());
+        }
 
         Calendar today = Calendar.getInstance();
         calendarView.setMinDate(today.getTimeInMillis());
@@ -147,6 +162,7 @@ public class BookingScheduleActivity extends AppCompatActivity {
             tvDateStatus.setText("Select an available time.");
             tvDateStatus.setTextColor(0xFF757575);
         }
+        updateCalendarIndicator(allBooked);
 
         for (String slot : allSlots) {
             boolean isPast = isSlotInPast(slot);
@@ -168,15 +184,15 @@ public class BookingScheduleActivity extends AppCompatActivity {
     private TextView createSlotView(String slot, boolean booked, boolean isPast) {
         TextView view = new TextView(this);
         view.setText(slot);
-        view.setTextSize(12f);
+        view.setTextSize(14f);
         view.setPadding(24, 12, 24, 12);
         if (booked || isPast) {
             view.setEnabled(false);
             view.setTextColor(0xFF9E9E9E);
-            view.setBackgroundResource(R.drawable.button_outline_gray);
+            view.setBackground(null);
         } else {
-            view.setTextColor(0xFF7B1113);
-            view.setBackgroundResource(R.drawable.button_outline_red);
+            view.setTextColor(0xFF000000);
+            view.setBackground(null);
             view.setOnClickListener(v -> selectSlot(slot));
         }
         return view;
@@ -193,10 +209,20 @@ public class BookingScheduleActivity extends AppCompatActivity {
                 button.setBackgroundResource(R.drawable.button_rounded_primary);
                 button.setTextColor(0xFFFFFFFF);
             } else {
-                button.setBackgroundResource(R.drawable.button_outline_red);
-                button.setTextColor(0xFF7B1113);
+                button.setBackground(null);
+                button.setTextColor(0xFF000000);
             }
         }
+    }
+
+    private void updateCalendarIndicator(boolean allBooked) {
+        if (calendarView == null) {
+            return;
+        }
+        int indicator = allBooked
+                ? R.drawable.calendar_selected_full
+                : R.drawable.calendar_selected_available;
+        calendarView.setSelectedDateVerticalBar(indicator);
     }
 
     private List<String> buildTimeSlots() {
@@ -285,6 +311,21 @@ public class BookingScheduleActivity extends AppCompatActivity {
             booking.put("providerName", providerName);
             booking.put("providerLogoUri", logoUri);
             booking.put("serviceCategory", serviceCategory);
+            if (!TextUtils.isEmpty(serviceId)) {
+                booking.put("serviceId", serviceId);
+            }
+            if (!TextUtils.isEmpty(serviceName)) {
+                booking.put("serviceName", serviceName);
+            }
+            if (!TextUtils.isEmpty(serviceDescription)) {
+                booking.put("serviceDescription", serviceDescription);
+            }
+            if (servicePrice > 0) {
+                booking.put("servicePrice", servicePrice);
+            }
+            if (!TextUtils.isEmpty(serviceImageUri)) {
+                booking.put("serviceImageUri", serviceImageUri);
+            }
             booking.put("providerAddress", providerAddress);
             booking.put("status", "pending");
             booking.put("paymentStatus", "On-hold");

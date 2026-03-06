@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fix It Finder Admin - User Detail</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .header-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 14px 18px;
+      }
+
+      .name-chip {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 600;
+      }
+
+      .name-chip img {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #eee;
+      }
+
+      .pending-grid {
+        display: grid;
+        grid-template-columns: 1.3fr 0.6fr;
+        gap: 16px;
+        margin-top: 12px;
+      }
+
+      .pending-card table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+
+      .pending-card td,
+      .pending-card th {
+        border: 1px solid #4b4b4b;
+        padding: 6px 8px;
+      }
+
+      .status-box {
+        display: grid;
+        place-items: center;
+        background: #f1b502;
+        border-radius: 12px;
+        color: #2c2200;
+        font-weight: 600;
+        font-size: 14px;
+      }
+
+      .history-filters {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 12px;
+        align-items: center;
+        margin: 12px 0;
+      }
+
+      .history-table .table td {
+        background: #dce9f7;
+      }
+
+      @media (max-width: 980px) {
+        .pending-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .history-filters {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <div class="brand">
+          <img src="../app/src/main/res/drawable/ic_banner.png" alt="Fix It Finder" />
+          <div class="brand-title">
+            <span>Admin Panel</span>
+            <span>Fix It Finder</span>
+          </div>
+        </div>
+        <nav class="nav-pills">
+          <a class="nav-pill" href="./dashboard.html">Dashboard</a>
+          <a class="nav-pill is-active" href="./users.html">Users</a>
+          <a class="nav-pill" href="./service-providers.html">Service Providers</a>
+          <a class="nav-pill" href="./technicians.html">Technicians</a>
+          <a class="nav-pill" href="./reports.html">Report</a>
+        </nav>
+        <a class="logout-pill" href="./index.html">Log Out <span>⎋</span></a>
+      </header>
+
+      <div class="container">
+        <div class="card header-card">
+          <div class="name-chip">
+            <span>Name: John N. Nabaldog</span>
+            <img src="../app/src/main/res/drawable/ic_banner.png" alt="User" />
+            <span style="color: #e01b1b; font-size: 11px;">1</span>
+          </div>
+          <div class="badge success">Verified ✅</div>
+        </div>
+
+        <div class="card" style="margin-top: 16px;">
+          <div class="section-title">Pendings</div>
+          <div class="pending-grid">
+            <div class="pending-card">
+              <div style="display: flex; gap: 12px; margin-bottom: 10px;">
+                <div style="flex: 1;">
+                  <div class="subtle">Select Services:</div>
+                  <select>
+                    <option>Plumbing</option>
+                    <option>Carpentry</option>
+                  </select>
+                </div>
+                <div style="flex: 1;">
+                  <div class="subtle">Search</div>
+                  <input class="input" type="text" />
+                </div>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Service Fee</th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>1.</td>
+                    <td>Plumbing</td>
+                    <td>Php 480</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td>2.</td>
+                    <td>App Charged</td>
+                    <td>Php 320</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td>3.</td>
+                    <td>Checkups</td>
+                    <td>Php 100</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td>4.</td>
+                    <td>Other Fee</td>
+                    <td>N/A</td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td></td>
+                    <td>Total</td>
+                    <td>Php 900</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="status-box">Pending (Cash)</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 16px;">
+          <div class="section-title">Transaction History</div>
+          <div class="history-filters">
+            <div>
+              <div class="subtle">Select Date:</div>
+              <select>
+                <option>2022-23</option>
+                <option>2023-24</option>
+              </select>
+            </div>
+            <div>
+              <div class="subtle">Add Filter</div>
+              <select>
+                <option>All Payments</option>
+                <option>Verified</option>
+              </select>
+            </div>
+            <button class="btn small">Search</button>
+          </div>
+          <div class="history-table">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Type</th>
+                  <th>Transaction ID</th>
+                  <th>Verification Status</th>
+                  <th>Receipt</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>08/02/22</td>
+                  <td>Php 800</td>
+                  <td>Maintenance</td>
+                  <td>UITX 1003343434</td>
+                  <td>Pending</td>
+                  <td>6-SEM-01.pdf</td>
+                </tr>
+                <tr>
+                  <td>08/02/22</td>
+                  <td>Php 600</td>
+                  <td>Repair</td>
+                  <td>UITX 1003343434</td>
+                  <td>Verified</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>08/02/22</td>
+                  <td>Php 1,600</td>
+                  <td>Carpenter</td>
+                  <td>UITX 1003343434</td>
+                  <td>Verified</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>08/02/22</td>
+                  <td>Php 4,300</td>
+                  <td>Installation</td>
+                  <td>UITX 1003343434</td>
+                  <td>Verified</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>08/02/22</td>
+                  <td>Php 900</td>
+                  <td>Cleaning</td>
+                  <td>UPT 1003343434</td>
+                  <td>Verified</td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

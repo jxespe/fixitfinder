@@ -42,6 +42,8 @@ public class ProviderBookingAdapter extends RecyclerView.Adapter<ProviderBooking
         holder.tvBookedBy.setText(item.bookedBy);
         holder.tvBookedAt.setText(item.bookedAt);
         holder.tvRequiredAt.setText(item.requiredAt);
+        holder.tvJobDescription.setText(item.jobDescription);
+        holder.tvJobPrice.setText(item.priceText);
         holder.tvLocation.setText(item.location);
         holder.tvStatus.setText("Status: " + formatStatus(item.status));
 
@@ -107,6 +109,8 @@ public class ProviderBookingAdapter extends RecyclerView.Adapter<ProviderBooking
         final TextView tvBookedBy;
         final TextView tvBookedAt;
         final TextView tvRequiredAt;
+        final TextView tvJobDescription;
+        final TextView tvJobPrice;
         final TextView tvLocation;
         final TextView tvStatus;
         final View layoutActions;
@@ -125,6 +129,8 @@ public class ProviderBookingAdapter extends RecyclerView.Adapter<ProviderBooking
             tvBookedBy = itemView.findViewById(R.id.tvBookedBy);
             tvBookedAt = itemView.findViewById(R.id.tvBookedAt);
             tvRequiredAt = itemView.findViewById(R.id.tvRequiredAt);
+            tvJobDescription = itemView.findViewById(R.id.tvJobDescription);
+            tvJobPrice = itemView.findViewById(R.id.tvJobPrice);
             tvLocation = itemView.findViewById(R.id.tvBookingLocation);
             tvStatus = itemView.findViewById(R.id.tvBookingStatus);
             layoutActions = itemView.findViewById(R.id.layoutActions);

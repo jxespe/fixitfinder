@@ -40,11 +40,22 @@ public class BookingHistoryAdapter extends RecyclerView.Adapter<BookingHistoryAd
         holder.date.setText(item.dateText);
         holder.status.setText(item.status);
         holder.payment.setText(item.paymentStatus);
+        holder.description.setText(item.description);
+        holder.price.setText(item.priceText);
 
         holder.status.setTextColor(statusColor(item.status));
         holder.payment.setTextColor(statusColor(item.status));
 
         ImageLoader.load(holder.logo, item.logoUri, android.R.drawable.ic_menu_myplaces);
+        holder.itemView.setOnClickListener(v -> {
+            if (item.bookingId == null || item.bookingId.trim().isEmpty()) {
+                return;
+            }
+            android.content.Intent intent = new android.content.Intent();
+            intent.setClassName(v.getContext(), "com.example.fixitfinderapp.BookingTimelineActivity");
+            intent.putExtra("bookingId", item.bookingId);
+            v.getContext().startActivity(intent);
+        });
     }
 
     @Override
@@ -78,6 +89,8 @@ public class BookingHistoryAdapter extends RecyclerView.Adapter<BookingHistoryAd
         final TextView date;
         final TextView status;
         final TextView payment;
+        final TextView description;
+        final TextView price;
 
         VH(@NonNull View itemView) {
             super(itemView);
@@ -86,6 +99,8 @@ public class BookingHistoryAdapter extends RecyclerView.Adapter<BookingHistoryAd
             date = itemView.findViewById(R.id.tvBookingDate);
             status = itemView.findViewById(R.id.tvStatus);
             payment = itemView.findViewById(R.id.tvPayment);
+            description = itemView.findViewById(R.id.tvServiceDescription);
+            price = itemView.findViewById(R.id.tvServicePrice);
         }
     }
 }

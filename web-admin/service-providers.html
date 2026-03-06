@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fix It Finder Admin - Service Providers</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .provider-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 40px;
+        padding: 40px 10px;
+        place-items: center;
+      }
+
+      .provider-logo {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        border: 1px solid #cfcfcf;
+        display: grid;
+        place-items: center;
+        background: #fff;
+      }
+
+      .provider-logo img {
+        width: 92px;
+        height: 92px;
+        object-fit: contain;
+      }
+
+      @media (max-width: 900px) {
+        .provider-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 600px) {
+        .provider-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <div class="brand">
+          <img src="../app/src/main/res/drawable/ic_banner.png" alt="Fix It Finder" />
+          <div class="brand-title">
+            <span>Admin Panel</span>
+            <span>Fix It Finder</span>
+          </div>
+        </div>
+        <nav class="nav-pills">
+          <a class="nav-pill" href="./dashboard.html">Dashboard</a>
+          <a class="nav-pill" href="./users.html">Users</a>
+          <a class="nav-pill is-active" href="./service-providers.html">Service Providers</a>
+          <a class="nav-pill" href="./technicians.html">Technicians</a>
+          <a class="nav-pill" href="./reports.html">Report</a>
+        </nav>
+        <a class="logout-pill" href="./index.html">Log Out <span>⎋</span></a>
+      </header>
+
+      <div class="container">
+        <div class="card">
+          <div class="section-title">Service Providers</div>
+          <div class="provider-grid">
+            <div class="provider-logo">
+              <img src="../app/src/main/res/drawable/ic_plumbing.png" alt="Plumbing" />
+            </div>
+            <div class="provider-logo" style="width: 170px; height: 170px;">
+              <img src="../app/src/main/res/drawable/ic_carpentry.png" alt="CraftFix" />
+            </div>
+            <div class="provider-logo">
+              <img src="../app/src/main/res/drawable/ic_aircon_repairs.png" alt="CoolAir" />
+            </div>
+            <div class="provider-logo">
+              <img src="../app/src/main/res/drawable/ic_appliance_repair.png" alt="HomeHero" />
+            </div>
+            <div class="provider-logo">
+              <img src="../app/src/main/res/drawable/ic_electronics_repair.png" alt="Sparkle" />
+            </div>
+            <div class="provider-logo">
+              <img src="../app/src/main/res/drawable/ic_internet_technician.png" alt="LockPro" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

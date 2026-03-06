@@ -1,0 +1,40 @@
+runtime: php82
+
+env_variables:
+  FIREBASE_PROJECT_ID: "fixitfinder"
+  FIREBASE_API_KEY: "AIzaSyC30mOcG0t45SAYR-T2B_9aw-Ba6P0fqWM"
+  FIREBASE_CREDENTIALS: "credentials/firebase-service-account.json"
+  ADMIN_SESSION_KEY: "CHANGE_THIS_TO_A_LONG_RANDOM_SECRET"
+
+handlers:
+  - url: /
+    script: index.php
+
+  - url: /admin-registration\.php
+    script: admin-registration.php
+
+  - url: /admin-registration
+    script: admin-registration.php
+
+  - url: /index\.php
+    script: index.php
+
+  - url: /dashboard\.php
+    script: dashboard.php
+
+  - url: /.+\.php
+    script: auto
+
+  - url: /styles.css
+    static_files: styles.css
+    upload: styles.css
+
+  - url: /assets/(.*)
+    static_files: assets/\1
+    upload: assets/.*
+
+  - url: /asset.php
+    script: auto
+
+  - url: /.*
+    script: auto

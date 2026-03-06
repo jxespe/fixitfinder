@@ -89,30 +89,48 @@ public class HistoryActivity extends AppCompatActivity {
         Query query = FirebaseFirestore.getInstance()
                 .collection("bookings")
                 .whereEqualTo("userId", user.getUid());
-        if (!"all".equals(statusFilter)) {
-            query = query.whereEqualTo("status", statusFilter);
-        }
         query.get()
                 .addOnSuccessListener(snapshot -> {
                     items.clear();
                     snapshot.getDocuments().forEach(doc -> {
+                        String bookingId = doc.getId();
                         String providerName = doc.getString("providerName");
                         String serviceName = doc.getString("serviceName");
+                        String serviceDescription = doc.getString("serviceDescription");
+                        if (TextUtils.isEmpty(serviceDescription)) {
+                            serviceDescription = serviceName;
+                        }
+                        String priceText = formatPrice(doc.get("servicePrice"));
                         String title = !TextUtils.isEmpty(providerName) ? providerName :
                                 (!TextUtils.isEmpty(serviceName) ? serviceName : "Service Booking");
 
                         String status = displayStatus(doc.getString("status"));
+                        if (!matchesFilter(doc.getString("status"), statusFilter)) {
+                            return;
+                        }
                         String payment = displayPayment(doc.getString("paymentStatus"));
                         String logoUri = pickLogoUri(doc.getString("providerLogoUri"),
                                 doc.getString("logoUri"));
                         String dateText = formatDate(doc.get("scheduledAt"), doc.get("createdAt"));
-                        items.add(new BookingHistoryItem(title, dateText, status, payment, logoUri));
+                        long sortTimestamp = pickSortTimestamp(doc.get("scheduledAt"), doc.get("createdAt"));
+                        items.add(new BookingHistoryItem(
+                                bookingId,
+                                title,
+                                dateText,
+                                status,
+                                payment,
+                                logoUri,
+                                "Job: " + valueOrUnknown(serviceDescription),
+                                "Price: " + valueOrUnknown(priceText),
+                                sortTimestamp
+                        ));
                     });
+                    items.sort((a, b) -> Long.compare(b.sortTimestamp, a.sortTimestamp));
                     adapter.notifyDataSetChanged();
                     tvEmpty.setVisibility(items.isEmpty() ? android.view.View.VISIBLE : android.view.View.GONE);
                 })
                 .addOnFailureListener(e -> {
-                    tvEmpty.setText("Unable to load history.");
+                    tvEmpty.setText("Unable to load history: " + e.getMessage());
                     tvEmpty.setVisibility(android.view.View.VISIBLE);
                 });
     }
@@ -134,6 +152,42 @@ public class HistoryActivity extends AppCompatActivity {
             return primary;
         }
         return !TextUtils.isEmpty(fallback) ? fallback : null;
+    }
+
+    private long pickSortTimestamp(Object scheduledAt, Object createdAt) {
+        Date date = toDate(scheduledAt);
+        if (date == null) {
+            date = toDate(createdAt);
+        }
+        return date != null ? date.getTime() : 0L;
+    }
+
+    private String formatPrice(Object priceObj) {
+        if (priceObj instanceof Number) {
+            double price = ((Number) priceObj).doubleValue();
+            if (price > 0) {
+                return String.format(Locale.US, "\u20b1%.2f", price);
+            }
+        }
+        return null;
+    }
+
+    private String valueOrUnknown(String value) {
+        return TextUtils.isEmpty(value) ? "N/A" : value;
+    }
+
+    private boolean matchesFilter(String status, String filter) {
+        if (TextUtils.isEmpty(filter) || "all".equalsIgnoreCase(filter)) {
+            return true;
+        }
+        String normalizedStatus = status == null ? "" : status.replace("_", " ").trim().toLowerCase(Locale.US);
+        String normalizedFilter = filter.replace("_", " ").trim().toLowerCase(Locale.US);
+        if ("on process".equals(normalizedFilter)) {
+            return normalizedStatus.equals("on process")
+                    || normalizedStatus.equals("on-process")
+                    || normalizedStatus.equals("ongoing");
+        }
+        return normalizedStatus.equals(normalizedFilter);
     }
 
     private String formatDate(Object scheduledAt, Object createdAt) {

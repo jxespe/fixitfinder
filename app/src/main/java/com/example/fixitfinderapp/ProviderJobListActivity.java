@@ -120,6 +120,11 @@ public class ProviderJobListActivity extends AppCompatActivity {
                         }
                         String bookedAt = formatMillis(doc.getLong("createdAt"));
                         String status = doc.getString("status");
+                        String jobDescription = doc.getString("serviceDescription");
+                        if (TextUtils.isEmpty(jobDescription)) {
+                            jobDescription = doc.getString("serviceName");
+                        }
+                        String priceText = formatPrice(doc.get("servicePrice"));
 
                         Timestamp scheduledAt = doc.getTimestamp("scheduledAt");
                         String requiredAt = scheduledAt != null
@@ -137,7 +142,9 @@ public class ProviderJobListActivity extends AppCompatActivity {
                                 "Booked at: " + valueOrUnknown(bookedAt),
                                 "Required: " + valueOrUnknown(requiredAt),
                                 "Location: " + valueOrUnknown(location),
-                                status
+                                status,
+                                "Job: " + valueOrUnknown(jobDescription),
+                                "Price: " + valueOrUnknown(priceText)
                         ));
                     });
                     adapter.notifyDataSetChanged();
@@ -162,6 +169,16 @@ public class ProviderJobListActivity extends AppCompatActivity {
 
     private String valueOrUnknown(String value) {
         return TextUtils.isEmpty(value) ? "N/A" : value;
+    }
+
+    private String formatPrice(Object priceObj) {
+        if (priceObj instanceof Number) {
+            double price = ((Number) priceObj).doubleValue();
+            if (price > 0) {
+                return String.format(Locale.US, "\u20b1%.2f", price);
+            }
+        }
+        return null;
     }
 
     private void updateBookingStatus(ProviderBookingItem item, String status) {

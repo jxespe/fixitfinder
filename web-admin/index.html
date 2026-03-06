@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fix It Finder Admin - Login</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      body {
+        background: #1f1f1f;
+      }
+
+      .login-hero {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+
+      .login-card {
+        width: min(1120px, 94vw);
+        min-height: 600px;
+        border-radius: 18px;
+        overflow: hidden;
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)),
+          url("../app/src/main/res/drawable/ic_banner.png") center/cover no-repeat;
+        border: 6px solid #242424;
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        position: relative;
+      }
+
+      .login-left {
+        padding: 48px;
+        color: #fff;
+      }
+
+      .login-left h1 {
+        font-size: 28px;
+        margin-bottom: 10px;
+      }
+
+      .login-left h2 {
+        font-weight: 500;
+        font-size: 18px;
+        margin-bottom: 12px;
+      }
+
+      .login-left p {
+        font-size: 13px;
+        line-height: 1.6;
+        max-width: 420px;
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      .login-right {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 32px;
+      }
+
+      .login-panel {
+        width: min(360px, 100%);
+        background: rgba(255, 255, 255, 0.76);
+        border-radius: 14px;
+        padding: 22px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(6px);
+      }
+
+      .login-panel h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+
+      .login-panel span {
+        font-size: 12px;
+        color: #5f5f5f;
+      }
+
+      .form-group {
+        margin-top: 14px;
+      }
+
+      .form-group label {
+        font-size: 12px;
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .form-footer {
+        margin-top: 10px;
+        text-align: right;
+        font-size: 11px;
+        color: #6a6a6a;
+      }
+
+      .login-btn {
+        width: 100%;
+        margin-top: 16px;
+        border-radius: 10px;
+      }
+
+      @media (max-width: 900px) {
+        .login-card {
+          grid-template-columns: 1fr;
+        }
+
+        .login-left {
+          padding: 36px 28px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="login-hero">
+      <section class="login-card">
+        <div class="login-left">
+          <h1>Fix It Finder Admin</h1>
+          <h2>Welcome to Fix It Finder</h2>
+          <p>
+            Fix It Finder Services is your reliable partner for fast, efficient, and professional
+            repair and maintenance solutions. We connect you with skilled experts ready to handle
+            everything from simple fixes to complex projects - making home and workplace repairs
+            easy, convenient, and stress-free. With quality service and customer satisfaction at our
+            core, we help you get things fixed right the first time.
+          </p>
+        </div>
+        <div class="login-right">
+          <div class="login-panel">
+            <h3>Login</h3>
+            <span>Welcome onboard with us!</span>
+            <div class="form-group">
+              <label>Admin Email ID</label>
+              <input class="input" type="text" placeholder="Enter your username" />
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input class="input" type="password" placeholder="Enter your password" />
+            </div>
+            <div class="form-footer">Forgot Password?</div>
+            <button class="btn login-btn">LogIn as Admin</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

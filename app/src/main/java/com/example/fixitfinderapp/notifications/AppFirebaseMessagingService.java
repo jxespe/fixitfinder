@@ -44,6 +44,10 @@ public class AppFirebaseMessagingService extends FirebaseMessagingService {
         String avatarUri = remoteMessage.getData().get("avatarUri");
 
         showNotification(title, body, conversationId, chatTitle, avatarUri);
+        NotificationStore.add(this,
+                title != null ? title : "New message",
+                body != null ? body : "You have a new message",
+                System.currentTimeMillis());
     }
 
     private void showNotification(String title, String body,

@@ -72,6 +72,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".NotificationsActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".ProviderSettingsActivity"
             android:exported="false" />
 
@@ -99,6 +103,10 @@
             </intent-filter>
         </service>
 
+        <receiver
+            android:name=".notifications.ReminderReceiver"
+            android:exported="false" />
+
         <activity
             android:name=".BookingActivity"
             android:exported="false" />
@@ -109,6 +117,9 @@
             android:name=".BookingConfirmationActivity"
             android:exported="false" />
         <activity
+            android:name=".BookingTimelineActivity"
+            android:exported="false" />
+        <activity
             android:name=".ProviderJobListActivity"
             android:exported="false" />
         <activity
@@ -117,6 +128,10 @@
 
         <activity
             android:name=".ProviderProfileActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ProviderServicesActivity"
             android:exported="false" />
 
         <activity

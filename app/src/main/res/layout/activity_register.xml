@@ -29,7 +29,7 @@
             android:layout_marginStart="8dp"
             android:text="User Account Registration"
             android:textColor="@color/color_text_dark"
-            android:textSize="18sp"
+            android:textSize="25sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="@+id/btnBack"
             app:layout_constraintEnd_toEndOf="parent"
