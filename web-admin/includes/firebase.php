@@ -210,15 +210,17 @@ function firestore_decode_fields(array $fields): array
 function firestore_save_admin(string $uid, array $profile): void
 {
     $projectId = firebase_project_id();
-    $url = "https://firestore.googleapis.com/v1/projects/{$projectId}/databases/(default)/documents/admins/{$uid}";
     $payload = ['fields' => firestore_encode_fields($profile)];
+    $token = firebase_access_token();
 
-    $ch = curl_init($url);
+    // Try create (POST) first.
+    $createUrl = "https://firestore.googleapis.com/v1/projects/{$projectId}/databases/(default)/documents/admins?documentId={$uid}";
+    $ch = curl_init($createUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'Content-Type: application/json',
-        'Authorization: Bearer ' . firebase_access_token(),
+        'Authorization: Bearer ' . $token,
     ]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
     $response = curl_exec($ch);
@@ -228,6 +230,26 @@ function firestore_save_admin(string $uid, array $profile): void
 
     if ($response === false) {
         throw new RuntimeException("Firestore request failed: " . $error);
+    }
+    if ($status === 409) {
+        // Document exists, update it with PATCH.
+        $updateUrl = "https://firestore.googleapis.com/v1/projects/{$projectId}/databases/(default)/documents/admins/{$uid}";
+        $ch = curl_init($updateUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $token,
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        $response = curl_exec($ch);
+        $error = curl_error($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        curl_close($ch);
+
+        if ($response === false) {
+            throw new RuntimeException("Firestore request failed: " . $error);
+        }
     }
     if ($status >= 300) {
         throw new RuntimeException("Firestore save failed.");

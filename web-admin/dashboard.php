@@ -4,6 +4,7 @@ require_once __DIR__ . "/includes/auth.php";
 require_login();
 
 $providers = $pdo->query("SELECT * FROM providers ORDER BY id ASC LIMIT 8")->fetchAll();
+$loginFlash = get_flash('login_success');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -145,6 +146,11 @@ $providers = $pdo->query("SELECT * FROM providers ORDER BY id ASC LIMIT 8")->fet
 
       <div class="container">
         <div class="card">
+          <?php if (!empty($loginFlash)) : ?>
+          <div class="message success" style="margin-bottom: 12px;">
+            <?php echo htmlspecialchars($loginFlash, ENT_QUOTES); ?>
+          </div>
+          <?php endif; ?>
           <div class="section-title">Quick Actions:</div>
           <div class="quick-actions">
             <div class="quick-card">
