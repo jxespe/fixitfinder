@@ -3,13 +3,13 @@ package com.example.fixitfinderapp;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.fixitfinderapp.adapters.ProviderServiceAdapter;
 import com.example.fixitfinderapp.models.ProviderServiceItem;
@@ -18,7 +18,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BookingActivity extends AppCompatActivity {
+public class BookingActivity extends BaseSwipeActivity {
 
     private final List<ProviderServiceItem> services = new ArrayList<>();
     private ProviderServiceAdapter serviceAdapter;
@@ -39,6 +39,8 @@ public class BookingActivity extends AppCompatActivity {
         TextView tvProviderName = findViewById(R.id.tvProviderName);
         TextView tvProviderSubtitle = findViewById(R.id.tvProviderSubtitle);
         TextView tvProviderLocation = findViewById(R.id.tvProviderLocation);
+        TextView tvWhyDescription = findViewById(R.id.tvWhyDescription);
+        ImageView ivWhyProviderPhoto = findViewById(R.id.ivWhyProviderPhoto);
         RecyclerView recyclerServices = findViewById(R.id.recyclerProviderServices);
         tvServicesEmpty = findViewById(R.id.tvServicesEmpty);
 
@@ -47,6 +49,8 @@ public class BookingActivity extends AppCompatActivity {
         String category = getIntent().getStringExtra("serviceCategory");
         String address = getIntent().getStringExtra("address");
         String logoUri = getIntent().getStringExtra("logoUri");
+
+        ImageLoader.loadProfile(ivWhyProviderPhoto, logoUri, android.R.drawable.ic_menu_myplaces);
 
         if (!TextUtils.isEmpty(providerName)) {
             tvHeaderTitle.setText(providerName);
@@ -60,8 +64,10 @@ public class BookingActivity extends AppCompatActivity {
         }
 
         btnBack.setOnClickListener(v -> finish());
-
         setupServicesRecycler(recyclerServices);
+        if (!TextUtils.isEmpty(providerId)) {
+            loadProviderIntro(providerId, tvWhyDescription, ivWhyProviderPhoto);
+        }
         if (!TextUtils.isEmpty(providerId)) {
             loadProviderServices(providerId);
         } else {
@@ -103,7 +109,7 @@ public class BookingActivity extends AppCompatActivity {
             selectedServiceImageUri = item.imageUri;
             selectedServiceDescription = item.description;
             serviceAdapter.setSelectedId(item.id);
-        });
+        }, null);
         recyclerServices.setAdapter(serviceAdapter);
     }
 
@@ -137,6 +143,33 @@ public class BookingActivity extends AppCompatActivity {
                     String message = "Failed to load services: " + e.getMessage();
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show();
                     showEmptyServices();
+                });
+    }
+
+    private void loadProviderIntro(String providerId,
+                                   TextView tvWhyDescription,
+                                   ImageView ivWhyProviderPhoto) {
+        FirebaseFirestore.getInstance()
+                .collection("providers")
+                .document(providerId)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) {
+                        return;
+                    }
+                    if (tvWhyDescription != null) {
+                        String reason = doc.getString("whyChooseUs");
+                        if (!TextUtils.isEmpty(reason)) {
+                            tvWhyDescription.setText(reason);
+                        }
+                    }
+                    if (ivWhyProviderPhoto != null) {
+                        String logo = doc.getString("logoUri");
+                        if (!TextUtils.isEmpty(logo)) {
+                            ImageLoader.loadProfile(ivWhyProviderPhoto, logo,
+                                    android.R.drawable.ic_menu_myplaces);
+                        }
+                    }
                 });
     }
 

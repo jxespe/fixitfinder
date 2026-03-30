@@ -23,20 +23,27 @@ public class ProviderServiceAdapter extends RecyclerView.Adapter<ProviderService
         void onServiceClick(ProviderServiceItem item);
     }
 
+    public interface OnServiceDeleteListener {
+        void onServiceDelete(ProviderServiceItem item, int position);
+    }
+
     private final List<ProviderServiceItem> services;
     private final boolean editable;
     private final boolean selectable;
     private final OnServiceClickListener listener;
+    private final OnServiceDeleteListener deleteListener;
     private String selectedId;
 
     public ProviderServiceAdapter(List<ProviderServiceItem> services,
                                   boolean editable,
                                   boolean selectable,
-                                  @Nullable OnServiceClickListener listener) {
+                                  @Nullable OnServiceClickListener listener,
+                                  @Nullable OnServiceDeleteListener deleteListener) {
         this.services = services;
         this.editable = editable;
         this.selectable = selectable;
         this.listener = listener;
+        this.deleteListener = deleteListener;
     }
 
     @Override
@@ -63,6 +70,17 @@ public class ProviderServiceAdapter extends RecyclerView.Adapter<ProviderService
         } else {
             holder.itemView.setOnClickListener(null);
         }
+        if (holder.btnRemove != null) {
+            holder.btnRemove.setVisibility(editable ? View.VISIBLE : View.GONE);
+            holder.btnRemove.setOnClickListener(editable && deleteListener != null
+                    ? v -> {
+                        int adapterPos = holder.getAdapterPosition();
+                        if (adapterPos != RecyclerView.NO_POSITION) {
+                            deleteListener.onServiceDelete(item, adapterPos);
+                        }
+                    }
+                    : null);
+        }
     }
 
     @Override
@@ -86,12 +104,14 @@ public class ProviderServiceAdapter extends RecyclerView.Adapter<ProviderService
         final ImageView image;
         final TextView name;
         final TextView price;
+        final TextView btnRemove;
 
         VH(View itemView) {
             super(itemView);
             image = itemView.findViewById(R.id.ivServiceImage);
             name = itemView.findViewById(R.id.tvServiceName);
             price = itemView.findViewById(R.id.tvServicePrice);
+            btnRemove = itemView.findViewById(R.id.btnRemoveService);
         }
     }
 }

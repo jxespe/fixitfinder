@@ -28,6 +28,11 @@ if ($isRegistration) {
     exit;
 }
 
+if ($admin && ($path === '' || $path === '/' || $path === '/index.php')) {
+    header("Location: dashboard.php");
+    exit;
+}
+
 if ($isDashboard) {
     require __DIR__ . "/dashboard.php";
     exit;
@@ -66,20 +71,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$profile) {
                 throw new RuntimeException("Admin profile not found in Firestore.");
             }
-            $_SESSION['login_attempts'] = 0;
-            $_SESSION['login_locked_until'] = 0;
-            login_admin_firebase($uid, $profile);
-            set_flash('login_success', 'Login successful. Redirecting to dashboard.');
-            header("Location: dashboard.php");
-            exit;
         } catch (Throwable $e) {
-            $attempts++;
-            $_SESSION['login_attempts'] = $attempts;
-            if ($attempts >= 5) {
-                $_SESSION['login_locked_until'] = time() + 300;
+            $profile = null;
+            try {
+                $profile = firestore_find_admin_by_email($email);
+            } catch (Throwable $ignored) {
+                $profile = null;
             }
-            $loginError = $e->getMessage();
+            $hash = is_array($profile) ? ($profile['password_hash'] ?? '') : '';
+            if (!is_string($hash) || $hash === '' || !password_verify($password, $hash)) {
+                throw $e;
+            }
+            $uid = (string) ($profile['uid'] ?? $profile['id'] ?? '');
+            if ($uid === '') {
+                throw $e;
+            }
         }
+        $_SESSION['login_attempts'] = 0;
+        $_SESSION['login_locked_until'] = 0;
+        login_admin_firebase($uid, $profile);
+        set_flash('login_success', 'Login successful. Redirecting to dashboard.');
+        header("Location: dashboard.php");
+        exit;
     }
 }
 

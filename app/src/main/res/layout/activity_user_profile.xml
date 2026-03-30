@@ -8,13 +8,13 @@
 
     <ImageButton
         android:id="@+id/btnBack"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
+        android:layout_width="@dimen/back_btn_width"
+        android:layout_height="@dimen/back_btn_height"
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:background="@android:color/transparent"
         android:contentDescription="Back"
-        android:src="@android:drawable/ic_media_previous"
+        android:src="@drawable/ic_back_chevron"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -37,7 +37,8 @@
         android:layout_width="120dp"
         android:layout_height="120dp"
         android:layout_marginTop="24dp"
-        android:background="@drawable/bg_service_card"
+        android:background="@drawable/bg_profile_circle"
+        android:clipToOutline="true"
         app:layout_constraintTop_toBottomOf="@id/btnBack"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -48,6 +49,8 @@
             android:layout_height="match_parent"
             android:contentDescription="Profile Photo"
             android:scaleType="centerCrop"
+            android:clipToOutline="true"
+            android:background="@drawable/bg_profile_circle"
             android:src="@android:drawable/ic_menu_myplaces" />
 
         <ImageButton
@@ -175,3 +178,4 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+

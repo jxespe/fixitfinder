@@ -13,7 +13,6 @@ import android.util.Log;
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -23,7 +22,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.yalantis.ucrop.UCrop;
 
-public class UserProfileActivity extends AppCompatActivity {
+public class UserProfileActivity extends BaseSwipeActivity {
 
     private static final String TAG = "UserProfileActivity";
     private ImageView ivProfilePhoto;
@@ -92,7 +91,7 @@ public class UserProfileActivity extends AppCompatActivity {
                     tvEmail.setText(!TextUtils.isEmpty(email) ? email : "Email");
                     tvPhone.setText(!TextUtils.isEmpty(phone) ? phone : "Phone");
                     tvAddress.setText(!TextUtils.isEmpty(address) ? address : "Address");
-                    ImageLoader.load(ivProfilePhoto, photo, android.R.drawable.ic_menu_myplaces);
+                    ImageLoader.loadProfile(ivProfilePhoto, photo, android.R.drawable.ic_menu_myplaces);
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to load profile", Toast.LENGTH_SHORT).show());
@@ -160,7 +159,7 @@ public class UserProfileActivity extends AppCompatActivity {
         if (uri == null || user == null) {
             return;
         }
-        ImageLoader.load(ivProfilePhoto, uri.toString(), android.R.drawable.ic_menu_myplaces);
+        ImageLoader.loadProfile(ivProfilePhoto, uri.toString(), android.R.drawable.ic_menu_myplaces);
         uploadPhotoToStorage(uri);
     }
 

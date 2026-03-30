@@ -46,7 +46,7 @@ public class BookingHistoryAdapter extends RecyclerView.Adapter<BookingHistoryAd
         holder.status.setTextColor(statusColor(item.status));
         holder.payment.setTextColor(statusColor(item.status));
 
-        ImageLoader.load(holder.logo, item.logoUri, android.R.drawable.ic_menu_myplaces);
+        ImageLoader.loadProfile(holder.logo, item.logoUri, android.R.drawable.ic_menu_myplaces);
         holder.itemView.setOnClickListener(v -> {
             if (item.bookingId == null || item.bookingId.trim().isEmpty()) {
                 return;

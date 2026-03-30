@@ -3,7 +3,7 @@ package com.example.fixitfinderapp;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
-import androidx.appcompat.app.AppCompatActivity;
+import android.widget.Toast;
 
 import com.example.fixitfinderapp.auth.LoginActivity;
 import com.example.fixitfinderapp.auth.OtpActivity;
@@ -14,7 +14,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseSwipeActivity {
 
     private FirebaseAuth auth;
     private FirebaseFirestore db;
@@ -63,17 +63,13 @@ public class MainActivity extends AppCompatActivity {
                         String phone = doc.getString("phone");
                         boolean verified = phoneVerified != null && phoneVerified;
                         if (!verified) {
-                            goToOtp(phone, role != null ? role : "user");
+                            handleIncompleteRegistration(role != null ? role : "user");
                             return;
                         }
                         SessionManager.saveRole(this, role != null ? role : "user");
                         MessagingHelper.syncToken(this);
                         ReminderWorkScheduler.schedule(this);
-                        if ("provider".equalsIgnoreCase(role)) {
-                            startActivity(new Intent(this, DashboardActivity.class));
-                        } else {
-                            startActivity(new Intent(this, UserDashboardActivity.class));
-                        }
+                        startActivity(new Intent(this, MainTabsActivity.class));
                         finish();
                         return;
                     }
@@ -81,12 +77,10 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e -> {
                     String cachedRole = SessionManager.getRole(this);
-                    if ("provider".equalsIgnoreCase(cachedRole)) {
-                        startActivity(new Intent(this, DashboardActivity.class));
-                    } else if ("user".equalsIgnoreCase(cachedRole)) {
-                        startActivity(new Intent(this, UserDashboardActivity.class));
+                    if ("provider".equalsIgnoreCase(cachedRole) || "user".equalsIgnoreCase(cachedRole)) {
+                        startActivity(new Intent(this, MainTabsActivity.class));
                     } else {
-                        goToOtp(null, "user");
+                        handleIncompleteRegistration("user");
                     }
                     finish();
                 });
@@ -98,22 +92,23 @@ public class MainActivity extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(doc -> {
                     if (!doc.exists()) {
+                        handleIncompleteRegistration("provider");
                         return;
                     }
                     Boolean phoneVerified = doc.getBoolean("phoneVerified");
                     String phone = doc.getString("phone");
                     boolean verified = phoneVerified != null && phoneVerified;
                     if (!verified) {
-                        goToOtp(phone, "provider");
+                        handleIncompleteRegistration("provider");
                         return;
                     }
                     SessionManager.saveRole(this, "provider");
                     MessagingHelper.syncToken(this);
                     ReminderWorkScheduler.schedule(this);
-                    startActivity(new Intent(this, DashboardActivity.class));
+                    startActivity(new Intent(this, MainTabsActivity.class));
                     finish();
                 })
-                .addOnFailureListener(e -> goToOtp(null, "provider"));
+                .addOnFailureListener(e -> handleIncompleteRegistration("provider"));
     }
 
     private void goToOtp(String phone, String role) {
@@ -125,5 +120,11 @@ public class MainActivity extends AppCompatActivity {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    private void handleIncompleteRegistration(String role) {
+        SessionManager.clear(this);
+        auth.signOut();
+        Toast.makeText(this, "Please complete registration to continue.", Toast.LENGTH_LONG).show();
     }
 }

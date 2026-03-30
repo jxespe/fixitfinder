@@ -1,18 +1,52 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . "/includes/auth.php";
+require_once __DIR__ . "/includes/firebase.php";
 require_login();
 
+$providerUid = trim((string) ($_GET['uid'] ?? ''));
 $providerId = (int) ($_GET['id'] ?? 0);
-if ($providerId <= 0) {
-    $providerId = (int) $pdo->query("SELECT id FROM providers ORDER BY id ASC LIMIT 1")->fetchColumn();
+$usingFirestore = false;
+$provider = null;
+
+if ($providerUid !== '') {
+    try {
+        $doc = firestore_get_document('providers', $providerUid);
+        if (is_array($doc)) {
+            $provider = [
+                'id' => $doc['id'] ?? $providerUid,
+                'name' => $doc['fullName'] ?? ($doc['name'] ?? 'Provider'),
+                'service_type' => $doc['serviceCategory'] ?? ($doc['serviceType'] ?? 'Service'),
+                'branch' => $doc['branch'] ?? ($doc['address'] ?? 'N/A'),
+                'phone' => $doc['phone'] ?? '',
+                'email' => $doc['email'] ?? '',
+                'address' => $doc['address'] ?? '',
+                'ranking' => $doc['ranking'] ?? 'N/A',
+                'status' => $doc['status'] ?? 'Active',
+                'verified' => $doc['verified'] ?? ($doc['phoneVerified'] ?? false),
+                'rating' => (float) ($doc['rating'] ?? 0),
+                'logo' => $doc['logo'] ?? 'ic_banner.png',
+                'pending_count' => (int) ($doc['pendingCount'] ?? 0),
+                'completed_count' => (int) ($doc['completedCount'] ?? 0),
+                'report_count' => (int) ($doc['reportCount'] ?? 0),
+                'business_hours' => $doc['businessHours'] ?? 'N/A',
+            ];
+            $usingFirestore = true;
+        }
+    } catch (RuntimeException $e) {
+        $usingFirestore = false;
+    }
 }
 
-$provider = null;
-if ($providerId > 0) {
-    $stmt = $pdo->prepare("SELECT * FROM providers WHERE id = :id");
-    $stmt->execute(['id' => $providerId]);
-    $provider = $stmt->fetch();
+if (!$usingFirestore) {
+    if ($providerId <= 0) {
+        $providerId = (int) $pdo->query("SELECT id FROM providers ORDER BY id ASC LIMIT 1")->fetchColumn();
+    }
+    if ($providerId > 0) {
+        $stmt = $pdo->prepare("SELECT * FROM providers WHERE id = :id");
+        $stmt->execute(['id' => $providerId]);
+        $provider = $stmt->fetch();
+    }
 }
 
 if (!$provider) {
@@ -181,9 +215,13 @@ if (!$provider) {
                 <?php echo htmlspecialchars((string) $provider['business_hours'], ENT_QUOTES); ?>
                 <div class="metric-label">Business Hours</div>
               </div>
-              <div class="metric-card small" style="grid-column: span 2;">
+              <a
+                class="metric-card small"
+                style="grid-column: span 2; text-decoration: none;"
+                href="./provider-documents.php?<?php echo $usingFirestore ? 'provider_uid=' . urlencode((string) $provider['id']) : 'provider_id=' . (int) $providerId; ?>"
+              >
                 File Documentation
-              </div>
+              </a>
             </div>
           </div>
         </div>

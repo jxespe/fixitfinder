@@ -20,9 +20,9 @@
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@android:drawable/ic_media_previous"
+            android:layout_width="@dimen/back_btn_width"
+            android:layout_height="@dimen/back_btn_height"
+            android:src="@drawable/ic_back_chevron"
             android:tint="@color/white"
             android:padding="4dp"
             android:background="?attr/selectableItemBackgroundBorderless"
@@ -52,3 +52,4 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+

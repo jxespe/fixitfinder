@@ -3,9 +3,8 @@ package com.example.fixitfinderapp;
 import android.os.Bundle;
 import android.widget.Toast;
 import androidx.annotation.LayoutRes;
-import androidx.appcompat.app.AppCompatActivity;
 
-public class PreviewActivity extends AppCompatActivity {
+public class PreviewActivity extends BaseSwipeActivity {
 
     public static final String EXTRA_LAYOUT_RES_ID = "layoutResId";
 

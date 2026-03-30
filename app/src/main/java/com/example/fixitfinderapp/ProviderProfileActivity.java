@@ -13,7 +13,6 @@ import android.util.Log;
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -24,7 +23,7 @@ import com.google.firebase.storage.StorageReference;
 import com.yalantis.ucrop.UCrop;
 import com.yalantis.ucrop.UCropActivity;
 
-public class ProviderProfileActivity extends AppCompatActivity {
+public class ProviderProfileActivity extends BaseSwipeActivity {
 
     private static final String TAG = "ProviderProfileActivity";
     private ImageView ivCompanyLogo;
@@ -91,7 +90,7 @@ public class ProviderProfileActivity extends AppCompatActivity {
                             : "Address");
 
                     if (!TextUtils.isEmpty(logoUri)) {
-                        ImageLoader.load(ivCompanyLogo, logoUri, android.R.drawable.ic_menu_gallery);
+                        ImageLoader.loadProfile(ivCompanyLogo, logoUri, android.R.drawable.ic_menu_gallery);
                     }
                 })
                 .addOnFailureListener(e ->
@@ -160,7 +159,7 @@ public class ProviderProfileActivity extends AppCompatActivity {
         if (uri == null || user == null) {
             return;
         }
-        ImageLoader.load(ivCompanyLogo, uri.toString(), android.R.drawable.ic_menu_gallery);
+        ImageLoader.loadProfile(ivCompanyLogo, uri.toString(), android.R.drawable.ic_menu_gallery);
         uploadLogoToStorage(uri);
     }
 

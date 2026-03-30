@@ -52,7 +52,7 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
         } else {
             holder.tvBadge.setVisibility(View.GONE);
         }
-        ImageLoader.load(holder.ivAvatar, item.avatarUri, android.R.drawable.ic_menu_myplaces);
+        ImageLoader.loadProfile(holder.ivAvatar, item.avatarUri, android.R.drawable.ic_menu_myplaces);
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onConversationClick(item);

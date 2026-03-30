@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TextView;
+import android.location.Location;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -19,9 +20,17 @@ import java.util.List;
 public class ServiceProviderAdapter extends RecyclerView.Adapter<ServiceProviderAdapter.VH> {
 
     private final List<ServiceProviderProfile> providers;
+    private Double userLat;
+    private Double userLng;
 
     public ServiceProviderAdapter(List<ServiceProviderProfile> providers) {
         this.providers = providers;
+    }
+
+    public void setUserLocation(Double lat, Double lng) {
+        this.userLat = lat;
+        this.userLng = lng;
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -48,10 +57,11 @@ public class ServiceProviderAdapter extends RecyclerView.Adapter<ServiceProvider
         holder.name.setText(name);
         holder.type.setText(category);
         holder.location.setText(address);
+        holder.distance.setText(formatDistance(provider, address));
         holder.price.setText("Contact for pricing");
         holder.rating.setRating(0f);
         holder.rating.setIsIndicator(true);
-        ImageLoader.load(holder.logo, provider.logoUri, android.R.drawable.ic_menu_myplaces);
+        ImageLoader.loadProfile(holder.logo, provider.logoUri, android.R.drawable.ic_menu_myplaces);
         holder.itemView.setOnClickListener(v -> {
             android.content.Intent intent =
                     new android.content.Intent(v.getContext(),
@@ -75,6 +85,7 @@ public class ServiceProviderAdapter extends RecyclerView.Adapter<ServiceProvider
         final TextView name;
         final TextView type;
         final TextView location;
+        final TextView distance;
         final TextView price;
         final RatingBar rating;
 
@@ -84,8 +95,25 @@ public class ServiceProviderAdapter extends RecyclerView.Adapter<ServiceProvider
             name = itemView.findViewById(R.id.tvProviderName);
             type = itemView.findViewById(R.id.tvProviderType);
             location = itemView.findViewById(R.id.tvLocation);
+            distance = itemView.findViewById(R.id.tvDistance);
             price = itemView.findViewById(R.id.tvPrice);
             rating = itemView.findViewById(R.id.ratingBar);
         }
+    }
+
+    private String formatDistance(ServiceProviderProfile provider, String address) {
+        if (provider == null || userLat == null || userLng == null) {
+            return "Distance unavailable";
+        }
+        if (provider.lat == null || provider.lng == null) {
+            if (address != null && !address.isEmpty() && !"Location hidden".equalsIgnoreCase(address)) {
+                return "Calculating distance...";
+            }
+            return "Distance unavailable";
+        }
+        float[] results = new float[1];
+        Location.distanceBetween(userLat, userLng, provider.lat, provider.lng, results);
+        double km = results[0] / 1000.0;
+        return String.format(java.util.Locale.US, "%.1f km away", km);
     }
 }

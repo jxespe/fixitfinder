@@ -1,18 +1,41 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . "/includes/auth.php";
+require_once __DIR__ . "/includes/firebase.php";
 require_login();
 
+$userUid = trim((string) ($_GET['uid'] ?? ''));
 $userId = (int) ($_GET['id'] ?? 0);
-if ($userId <= 0) {
-    $userId = (int) $pdo->query("SELECT id FROM users ORDER BY id ASC LIMIT 1")->fetchColumn();
+$usingFirestore = false;
+$user = null;
+
+if ($userUid !== '') {
+    try {
+        $doc = firestore_get_document('users', $userUid);
+        if (is_array($doc)) {
+            $user = [
+                'id' => $doc['id'] ?? $userUid,
+                'full_name' => $doc['fullName'] ?? ($doc['name'] ?? 'User'),
+                'email' => $doc['email'] ?? '',
+                'phone' => $doc['phone'] ?? '',
+                'verified' => $doc['verified'] ?? ($doc['phoneVerified'] ?? false),
+            ];
+            $usingFirestore = true;
+        }
+    } catch (RuntimeException $e) {
+        $usingFirestore = false;
+    }
 }
 
-$user = null;
-if ($userId > 0) {
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = :id");
-    $stmt->execute(['id' => $userId]);
-    $user = $stmt->fetch();
+if (!$usingFirestore) {
+    if ($userId <= 0) {
+        $userId = (int) $pdo->query("SELECT id FROM users ORDER BY id ASC LIMIT 1")->fetchColumn();
+    }
+    if ($userId > 0) {
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE id = :id");
+        $stmt->execute(['id' => $userId]);
+        $user = $stmt->fetch();
+    }
 }
 
 if (!$user) {
@@ -20,13 +43,17 @@ if (!$user) {
     exit;
 }
 
-$pendingItems = $pdo->prepare("SELECT * FROM user_pending_items WHERE user_id = :id");
-$pendingItems->execute(['id' => $userId]);
-$pendingItems = $pendingItems->fetchAll();
+$pendingItems = [];
+$transactions = [];
+if (!$usingFirestore) {
+    $pendingItems = $pdo->prepare("SELECT * FROM user_pending_items WHERE user_id = :id");
+    $pendingItems->execute(['id' => $userId]);
+    $pendingItems = $pendingItems->fetchAll();
 
-$transactions = $pdo->prepare("SELECT * FROM user_transactions WHERE user_id = :id ORDER BY date DESC");
-$transactions->execute(['id' => $userId]);
-$transactions = $transactions->fetchAll();
+    $transactions = $pdo->prepare("SELECT * FROM user_transactions WHERE user_id = :id ORDER BY date DESC");
+    $transactions->execute(['id' => $userId]);
+    $transactions = $transactions->fetchAll();
+}
 
 $totalPending = 0.0;
 foreach ($pendingItems as $item) {
@@ -141,10 +168,10 @@ foreach ($pendingItems as $item) {
             <span>Name: <?php echo htmlspecialchars($user['full_name'], ENT_QUOTES); ?></span>
             <img src="./assets/ic_banner.png" alt="User" />
             <span style="color: #e01b1b; font-size: 11px;">
-              <?php echo (int) $user['id']; ?>
+              <?php echo htmlspecialchars((string) $user['id'], ENT_QUOTES); ?>
             </span>
           </div>
-          <?php if ((int) $user['verified'] === 1) : ?>
+          <?php if (!empty($user['verified'])) : ?>
           <div class="badge success">Verified ✅</div>
           <?php else : ?>
           <div class="badge warning">Pending</div>

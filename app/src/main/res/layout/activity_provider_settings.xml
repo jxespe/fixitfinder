@@ -7,9 +7,12 @@
     android:background="@android:color/white">
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollContent"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:paddingBottom="@dimen/bottom_nav_padding">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -26,9 +29,9 @@
 
                 <ImageView
                     android:id="@+id/btnBack"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/ic_media_previous"
+                    android:layout_width="@dimen/back_btn_width"
+                    android:layout_height="@dimen/back_btn_height"
+                    android:src="@drawable/ic_back_chevron"
                     android:contentDescription="Back"
                     android:tint="@color/white" />
 
@@ -68,7 +71,7 @@
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:src="@android:drawable/ic_menu_myplaces"
+                    android:src="@drawable/ic_profile_info"
                     android:tint="#6B6B6B"
                     android:contentDescription="Profile Icon" />
 
@@ -80,12 +83,37 @@
                     android:textSize="14sp"
                     android:layout_marginStart="12dp" />
 
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E6E6E6" />
+
+            <LinearLayout
+                android:id="@+id/rowBusinessDocuments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="14dp"
+                android:background="@android:color/white">
+
                 <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:src="@android:drawable/ic_media_next"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@android:drawable/ic_menu_agenda"
                     android:tint="#6B6B6B"
-                    android:contentDescription="Chevron" />
+                    android:contentDescription="Documents" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Business documents (ID/DTI, BIR, permit)"
+                    android:textSize="14sp"
+                    android:layout_marginStart="12dp" />
+
             </LinearLayout>
 
             <View
@@ -116,7 +144,7 @@
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:src="@android:drawable/ic_menu_agenda"
+                    android:src="@drawable/ic_payment_method"
                     android:tint="#6B6B6B"
                     android:contentDescription="Payment Icon" />
 
@@ -128,12 +156,6 @@
                     android:textSize="14sp"
                     android:layout_marginStart="12dp" />
 
-                <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:src="@android:drawable/ic_media_next"
-                    android:tint="#6B6B6B"
-                    android:contentDescription="Chevron" />
             </LinearLayout>
 
             <View
@@ -181,7 +203,54 @@
                     android:layout_height="18dp"
                     android:src="@android:drawable/ic_media_next"
                     android:tint="#6B6B6B"
+                    android:id="@+id/ivPrivacyChevron"
                     android:contentDescription="Chevron" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutPrivacySecurity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@android:color/white"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="12dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Privacy &amp; Security"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:textColor="#6B6B6B"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp" />
+
+                <Switch
+                    android:id="@+id/switchAppLock"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Require app lock (PIN/biometrics)" />
+
+                <Switch
+                    android:id="@+id/switchHideProfile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Hide profile from public listings" />
+
+                <Switch
+                    android:id="@+id/switchShareLocation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Share precise location" />
+
+                <Switch
+                    android:id="@+id/switchAnalytics"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Allow analytics for app improvements" />
             </LinearLayout>
 
             <View
@@ -213,12 +282,6 @@
                     android:textSize="14sp"
                     android:layout_marginStart="12dp" />
 
-                <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:src="@android:drawable/ic_media_next"
-                    android:tint="#6B6B6B"
-                    android:contentDescription="Chevron" />
             </LinearLayout>
 
             <View
@@ -250,12 +313,6 @@
                     android:textSize="14sp"
                     android:layout_marginStart="12dp" />
 
-                <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:src="@android:drawable/ic_media_next"
-                    android:tint="#6B6B6B"
-                    android:contentDescription="Chevron" />
             </LinearLayout>
 
             <View
@@ -290,12 +347,6 @@
                     android:text="Clear cache"
                     android:textSize="14sp" />
 
-                <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:src="@android:drawable/ic_media_next"
-                    android:tint="#6B6B6B"
-                    android:contentDescription="Chevron" />
             </LinearLayout>
 
             <View
@@ -330,12 +381,6 @@
                     android:text="Log Out"
                     android:textSize="14sp" />
 
-                <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:src="@android:drawable/ic_media_next"
-                    android:tint="#6B6B6B"
-                    android:contentDescription="Chevron" />
             </LinearLayout>
 
         </LinearLayout>
@@ -353,4 +398,5 @@
         app:menu="@menu/bottom_navigation" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
 

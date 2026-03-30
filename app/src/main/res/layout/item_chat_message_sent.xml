@@ -3,16 +3,53 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:gravity="end"
-    android:padding="4dp">
+    android:gravity="bottom|end"
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp"
+    android:paddingTop="2dp"
+    android:paddingBottom="2dp">
 
-    <TextView
-        android:id="@+id/tvMessageText"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/button_rounded_primary"
-        android:textColor="@color/white"
-        android:textSize="14sp"
-        android:padding="10dp"
-        android:maxWidth="260dp" />
+        android:orientation="vertical"
+        android:gravity="end">
+
+        <TextView
+            android:id="@+id/tvMessageText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/button_rounded_primary"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:padding="10dp"
+            android:maxWidth="260dp"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/ivMessageImage"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:layout_marginTop="6dp"
+            android:adjustViewBounds="true"
+            android:scaleType="centerCrop"
+            android:background="#E5E7EB"
+            android:visibility="gone"
+            android:contentDescription="Message image" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="38dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="6dp">
+
+        <ImageView
+            android:id="@+id/ivMessageAvatar"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="bottom|end"
+            android:scaleType="centerCrop"
+            android:background="@drawable/bg_profile_circle"
+            android:contentDescription="Your photo" />
+    </FrameLayout>
 </LinearLayout>

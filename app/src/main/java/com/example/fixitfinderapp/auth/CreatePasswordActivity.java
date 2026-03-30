@@ -8,23 +8,28 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
+import android.graphics.Color;
 
-import androidx.appcompat.app.AppCompatActivity;
+import com.example.fixitfinderapp.BaseSwipeActivity;
 
-import com.example.fixitfinderapp.DashboardActivity;
+import com.example.fixitfinderapp.MainTabsActivity;
+import com.example.fixitfinderapp.NavigationHelper;
 import com.example.fixitfinderapp.R;
-import com.example.fixitfinderapp.UserDashboardActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-public class CreatePasswordActivity extends AppCompatActivity {
+public class CreatePasswordActivity extends BaseSwipeActivity {
 
     private EditText edtPassword;
     private EditText edtConfirmPassword;
     private ImageView btnPasswordToggle;
     private boolean isPasswordVisible = false;
     private String role = "user";
+    private android.widget.TextView tvPasswordRuleLength;
+    private android.widget.TextView tvPasswordRuleLetter;
+    private android.widget.TextView tvPasswordRuleNumber;
+    private android.widget.TextView tvPasswordRuleMatch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +40,10 @@ public class CreatePasswordActivity extends AppCompatActivity {
         edtConfirmPassword = findViewById(R.id.edtConfirmPassword);
         btnPasswordToggle = findViewById(R.id.btnPasswordToggle);
         Button btnSavePassword = findViewById(R.id.btnSavePassword);
+        tvPasswordRuleLength = findViewById(R.id.tvPasswordRuleLength);
+        tvPasswordRuleLetter = findViewById(R.id.tvPasswordRuleLetter);
+        tvPasswordRuleNumber = findViewById(R.id.tvPasswordRuleNumber);
+        tvPasswordRuleMatch = findViewById(R.id.tvPasswordRuleMatch);
 
         Intent intent = getIntent();
         if (intent != null) {
@@ -60,6 +69,8 @@ public class CreatePasswordActivity extends AppCompatActivity {
                 edtPassword.setSelection(edtPassword.getText().length());
             });
         }
+
+        setupPasswordWatchers();
 
         btnSavePassword.setOnClickListener(v -> savePassword());
     }
@@ -120,9 +131,9 @@ public class CreatePasswordActivity extends AppCompatActivity {
     private void goToDashboard() {
         Intent intent;
         if ("provider".equalsIgnoreCase(role)) {
-            intent = new Intent(this, DashboardActivity.class);
+            intent = new Intent(this, MainTabsActivity.class);
         } else {
-            intent = new Intent(this, UserDashboardActivity.class);
+            intent = new Intent(this, MainTabsActivity.class);
         }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
@@ -141,5 +152,51 @@ public class CreatePasswordActivity extends AppCompatActivity {
             }
         }
         return password.length() >= 8 && hasLetter && hasDigit;
+    }
+
+    private void setupPasswordWatchers() {
+        android.text.TextWatcher watcher = new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) { }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                updatePasswordStatus();
+            }
+        };
+        if (edtPassword != null) {
+            edtPassword.addTextChangedListener(watcher);
+        }
+        if (edtConfirmPassword != null) {
+            edtConfirmPassword.addTextChangedListener(watcher);
+        }
+        updatePasswordStatus();
+    }
+
+    private void updatePasswordStatus() {
+        String password = edtPassword != null ? edtPassword.getText().toString() : "";
+        String confirm = edtConfirmPassword != null ? edtConfirmPassword.getText().toString() : "";
+        boolean hasLength = password.length() >= 8;
+        boolean hasLetter = password.matches(".*[A-Za-z].*");
+        boolean hasNumber = password.matches(".*\\d.*");
+        boolean match = !TextUtils.isEmpty(confirm) && password.equals(confirm);
+
+        setRuleColor(tvPasswordRuleLength, hasLength);
+        setRuleColor(tvPasswordRuleLetter, hasLetter);
+        setRuleColor(tvPasswordRuleNumber, hasNumber);
+        if (tvPasswordRuleMatch != null) {
+            tvPasswordRuleMatch.setText(match ? "• Passwords match" : "• Passwords do not match");
+            setRuleColor(tvPasswordRuleMatch, match);
+        }
+    }
+
+    private void setRuleColor(android.widget.TextView view, boolean ok) {
+        if (view == null) {
+            return;
+        }
+        view.setTextColor(ok ? Color.parseColor("#1B9C85") : Color.parseColor("#F44336"));
     }
 }

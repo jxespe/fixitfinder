@@ -287,3 +287,153 @@ function firestore_get_admin(string $uid): ?array
     }
     return firestore_decode_fields($decoded['fields']);
 }
+
+function firestore_list_collection(
+    string $collection,
+    ?string $orderByField = null,
+    string $direction = 'DESCENDING',
+    int $limit = 200
+): array {
+    $projectId = firebase_project_id();
+    $url = "https://firestore.googleapis.com/v1/projects/" . $projectId
+        . "/databases/(default)/documents:runQuery";
+    $structured = [
+        'from' => [
+            ['collectionId' => $collection],
+        ],
+        'limit' => $limit,
+    ];
+    if (!empty($orderByField)) {
+        $structured['orderBy'] = [
+            ['field' => ['fieldPath' => $orderByField], 'direction' => $direction],
+        ];
+    }
+    $payload = ['structuredQuery' => $structured];
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . firebase_access_token(),
+    ]);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    $response = curl_exec($ch);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false) {
+        throw new RuntimeException("Firestore request failed: " . $error);
+    }
+
+    $rows = json_decode($response, true);
+    if (!is_array($rows)) {
+        return [];
+    }
+
+    $docs = [];
+    foreach ($rows as $row) {
+        if (empty($row['document'])) {
+            continue;
+        }
+        $doc = $row['document'];
+        $fields = firestore_decode_fields($doc['fields'] ?? []);
+        $name = $doc['name'] ?? '';
+        $parts = explode('/', $name);
+        $docId = $parts ? end($parts) : '';
+        $fields['id'] = $docId;
+        $docs[] = $fields;
+    }
+    return $docs;
+}
+
+function firestore_get_document(string $collection, string $docId): ?array
+{
+    $projectId = firebase_project_id();
+    $url = "https://firestore.googleapis.com/v1/projects/{$projectId}/databases/(default)/documents/{$collection}/{$docId}";
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . firebase_access_token(),
+    ]);
+    $response = curl_exec($ch);
+    $error = curl_error($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+
+    if ($response === false) {
+        throw new RuntimeException("Firestore request failed: " . $error);
+    }
+    if ($status === 404) {
+        return null;
+    }
+    if ($status >= 300) {
+        throw new RuntimeException("Firestore get failed.");
+    }
+
+    $decoded = json_decode($response, true);
+    if (!is_array($decoded) || empty($decoded['fields'])) {
+        return null;
+    }
+    $fields = firestore_decode_fields($decoded['fields']);
+    $fields['id'] = $docId;
+    return $fields;
+}
+
+function firestore_find_admin_by_email(string $email): ?array
+{
+    $projectId = firebase_project_id();
+    $url = "https://firestore.googleapis.com/v1/projects/" . $projectId
+        . "/databases/(default)/documents:runQuery";
+
+    $payload = [
+        'structuredQuery' => [
+            'from' => [
+                ['collectionId' => 'admins'],
+            ],
+            'where' => [
+                'fieldFilter' => [
+                    'field' => ['fieldPath' => 'email'],
+                    'op' => 'EQUAL',
+                    'value' => ['stringValue' => $email],
+                ],
+            ],
+            'limit' => 1,
+        ],
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . firebase_access_token(),
+    ]);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    $response = curl_exec($ch);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false) {
+        throw new RuntimeException("Firestore request failed: " . $error);
+    }
+
+    $rows = json_decode($response, true);
+    if (!is_array($rows)) {
+        return null;
+    }
+    foreach ($rows as $row) {
+        if (empty($row['document'])) {
+            continue;
+        }
+        $doc = $row['document'];
+        $fields = firestore_decode_fields($doc['fields'] ?? []);
+        $name = $doc['name'] ?? '';
+        $parts = explode('/', $name);
+        $docId = $parts ? end($parts) : '';
+        $fields['id'] = $docId;
+        return $fields;
+    }
+    return null;
+}

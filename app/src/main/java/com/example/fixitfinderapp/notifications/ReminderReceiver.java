@@ -12,6 +12,8 @@ import androidx.core.app.NotificationCompat;
 
 import com.example.fixitfinderapp.NotificationsActivity;
 import com.example.fixitfinderapp.R;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class ReminderReceiver extends BroadcastReceiver {
 
@@ -19,6 +21,8 @@ public class ReminderReceiver extends BroadcastReceiver {
     public static final String EXTRA_MESSAGE = "message";
     public static final String EXTRA_TIMESTAMP = "timestamp";
     public static final String EXTRA_NOTIFICATION_ID = "notification_id";
+    public static final String EXTRA_ROLE = "role";
+    public static final String EXTRA_USER_ID = "user_id";
     private static final String CHANNEL_ID = "reminders_channel";
 
     @Override
@@ -30,8 +34,10 @@ public class ReminderReceiver extends BroadcastReceiver {
         String message = intent.getStringExtra(EXTRA_MESSAGE);
         long timestamp = intent.getLongExtra(EXTRA_TIMESTAMP, System.currentTimeMillis());
         int notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, (int) System.currentTimeMillis());
+        String role = intent.getStringExtra(EXTRA_ROLE);
+        String userId = intent.getStringExtra(EXTRA_USER_ID);
 
-        NotificationStore.add(context, title, message, timestamp);
+        NotificationStore.add(context, title, message, timestamp, role, userId, "reminder");
         showNotification(context, title, message, notificationId);
     }
 
@@ -73,4 +79,5 @@ public class ReminderReceiver extends BroadcastReceiver {
         channel.setDescription("Booking reminders");
         manager.createNotificationChannel(channel);
     }
+
 }

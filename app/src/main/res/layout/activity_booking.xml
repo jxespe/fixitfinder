@@ -30,9 +30,9 @@
 
                 <ImageButton
                     android:id="@+id/btnBack"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/ic_media_previous"
+                    android:layout_width="@dimen/back_btn_width"
+                    android:layout_height="@dimen/back_btn_height"
+                    android:src="@drawable/ic_back_chevron"
                     android:tint="@color/white"
                     android:padding="4dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
@@ -106,12 +106,13 @@
                 app:layout_constraintEnd_toEndOf="parent">
 
                 <ImageView
+                    android:id="@+id/ivWhyProviderPhoto"
                     android:layout_width="72dp"
-                    android:layout_height="48dp"
+                    android:layout_height="72dp"
                     android:scaleType="centerCrop"
-                    android:contentDescription="Why Choose Us"
+                    android:contentDescription="Provider profile photo"
                     android:src="@android:drawable/ic_menu_gallery"
-                    android:background="#E0E0E0" />
+                    android:background="@drawable/bg_profile_circle" />
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -121,18 +122,21 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/tvWhyTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Why Choose Us"
                         android:textStyle="bold"
-                        android:textSize="12sp"
+                        android:textSize="16sp"
                         android:textColor="@android:color/black" />
 
                     <TextView
+                        android:id="@+id/tvWhyDescription"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Our team of experts provides reliable and affordable repairs for all electrical needs"
-                        android:textSize="11sp"
+                        android:layout_marginTop="4dp"
+                        android:textSize="14sp"
                         android:textColor="#757575" />
                 </LinearLayout>
             </LinearLayout>
@@ -233,7 +237,7 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
-                android:layout_marginBottom="80dp"
+                android:layout_marginBottom="16dp"
                 app:layout_constraintTop_toBottomOf="@+id/btnBookAppointment"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
@@ -241,16 +245,6 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Bottom Navigation -->
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNavigation"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:background="@color/white"
-        app:itemTextColor="@color/color_primary"
-        app:itemIconTint="@color/color_primary"
-        app:menu="@menu/bottom_navigation" />
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
 

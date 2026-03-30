@@ -3,8 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . "/includes/auth.php";
 require_login();
 
-$firstUserId = (int) $pdo->query("SELECT id FROM users ORDER BY id ASC LIMIT 1")->fetchColumn();
-$firstProviderId = (int) $pdo->query("SELECT id FROM providers ORDER BY id ASC LIMIT 1")->fetchColumn();
+$firstReportId = (int) $pdo->query("SELECT id FROM reports ORDER BY id ASC LIMIT 1")->fetchColumn();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -16,14 +15,8 @@ $firstProviderId = (int) $pdo->query("SELECT id FROM providers ORDER BY id ASC L
     <style>
       .report-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: minmax(0, 1fr);
         gap: 20px;
-      }
-
-      @media (max-width: 900px) {
-        .report-grid {
-          grid-template-columns: 1fr;
-        }
       }
     </style>
   </head>
@@ -50,22 +43,14 @@ $firstProviderId = (int) $pdo->query("SELECT id FROM providers ORDER BY id ASC L
       <div class="container">
         <div class="report-grid">
           <div class="card">
-            <div class="section-title">Receipts for Users</div>
+            <div class="section-title">User & Provider Reports</div>
             <p class="subtle">
-              Manage registration receipts and incomplete status per user. This section matches the
-              design used for registration completion.
+              Review bug reports and issue submissions from users and providers.
             </p>
             <div style="margin-top: 16px;">
-              <a class="btn" href="./receipts.php?id=<?php echo $firstUserId; ?>">Open Receipts</a>
-            </div>
-          </div>
-          <div class="card">
-            <div class="section-title">Provider Registration Slip</div>
-            <p class="subtle">
-              View submitted registration forms for service providers and verify documentation.
-            </p>
-            <div style="margin-top: 16px;">
-              <a class="btn" href="./provider-registration.php?id=<?php echo $firstProviderId; ?>">Open Registration</a>
+              <a class="btn" href="./reports-management.php<?php echo $firstReportId > 0 ? '' : ''; ?>">
+                Open Reports
+              </a>
             </div>
           </div>
         </div>

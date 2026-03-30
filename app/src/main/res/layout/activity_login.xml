@@ -11,16 +11,16 @@
         android:id="@+id/tvAppTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@color/color_primary"
+        android:gravity="center|left"
+        android:padding="16dp"
         android:text="FixIt Finder App"
+        android:textColor="@color/color_background"
         android:textSize="25sp"
         android:textStyle="bold"
-        android:textColor="@color/color_background"
-        android:background="@color/color_primary"
-        android:padding="16dp"
-        android:gravity="center"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <!-- Page Title -->
     <TextView
@@ -106,21 +106,24 @@
             android:hint="Enter your password"
             android:inputType="textPassword"
             android:padding="12dp"
-            android:paddingEnd="48dp"
+            android:paddingEnd="52dp"
             android:background="@drawable/edittext_background"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/btnPasswordToggle"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
 
         <ImageView
             android:id="@+id/btnPasswordToggle"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@android:drawable/ic_menu_view"
-            android:padding="4dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_eye_open"
+            android:padding="2dp"
             android:contentDescription="Show/Hide Password"
             android:layout_marginEnd="12dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
@@ -191,3 +194,4 @@
         app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+

@@ -2,6 +2,10 @@
 <resources>
     <!-- Core palette -->
     <color name="color_primary">#7B1113</color>
+    <!-- Subscription / promo maroon (mockup) -->
+    <color name="subscription_maroon">#70261D</color>
+    <color name="subscription_save_green">#2E7D32</color>
+    <color name="confirmation_success_green">#2E7D32</color>
     <color name="color_secondary">#825037</color>
     <color name="color_background">#FFFFFF</color>
     <color name="color_text_dark">#2C2C2C</color>
@@ -12,4 +16,7 @@
     <color name="primary_red">#7B1113</color>
     <color name="light_gray">#F5F5F5</color>
     <color name="text_gray">#757575</color>
+    <!-- History screen: inactive tab (light maroon / pink tint) -->
+    <color name="history_tab_inactive">#D4A5A7</color>
+    <color name="review_card_background">#F0F0F0</color>
 </resources>

@@ -1,25 +1,22 @@
 package com.example.fixitfinderapp;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.fixitfinderapp.adapters.BookingHistoryAdapter;
 import com.example.fixitfinderapp.models.BookingHistoryItem;
-import com.google.android.material.chip.ChipGroup;
-import com.google.android.material.chip.Chip;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -27,7 +24,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class ProviderHistoryActivity extends AppCompatActivity {
+public class ProviderHistoryActivity extends BaseSwipeActivity {
 
     private final List<BookingHistoryItem> items = new ArrayList<>();
     private BookingHistoryAdapter adapter;
@@ -45,23 +42,18 @@ public class ProviderHistoryActivity extends AppCompatActivity {
         TextView tvHeaderTitle = findViewById(R.id.tvHeaderTitle);
         tvHeaderTitle.setText("Bookings Received");
 
+        View tabBar = findViewById(R.id.layoutHistoryReviewTabs);
+        if (tabBar != null) {
+            tabBar.setVisibility(View.GONE);
+        }
+
         RecyclerView recycler = findViewById(R.id.recyclerViewHistory);
         tvEmpty = findViewById(R.id.tvEmptyHistory);
         adapter = new BookingHistoryAdapter(items);
         recycler.setLayoutManager(new LinearLayoutManager(this));
         recycler.setAdapter(adapter);
 
-        ChipGroup chipGroup = findViewById(R.id.chipGroupFilters);
-        chipGroup.setOnCheckedStateChangeListener((group, checkedIds) -> {
-            String filter = "all";
-            if (!checkedIds.isEmpty()) {
-                int id = checkedIds.get(0);
-                filter = readFilterTag(id);
-            }
-            loadHistory(filter);
-        });
-
-        loadHistory("all");
+        loadHistory();
 
         NavigationHelper.setupBottomNav(this, R.id.nav_history);
     }
@@ -70,26 +62,20 @@ public class ProviderHistoryActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         NavigationHelper.ensureLoggedIn(this);
+        BottomNavigationView bottomNavigation = findViewById(R.id.bottomNavigation);
+        NavigationHelper.updateMessageBadge(this, bottomNavigation);
     }
 
-    private String readFilterTag(int chipId) {
-        Chip chip = findViewById(chipId);
-        if (chip == null || chip.getTag() == null) {
-            return "all";
-        }
-        return chip.getTag().toString();
-    }
-
-    private void loadHistory(String statusFilter) {
+    private void loadHistory() {
         if (user == null) {
             Toast.makeText(this, "Please log in again.", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
-        Query query = FirebaseFirestore.getInstance()
+        FirebaseFirestore.getInstance()
                 .collection("bookings")
-                .whereEqualTo("providerId", user.getUid());
-        query.get()
+                .whereEqualTo("providerId", user.getUid())
+                .get()
                 .addOnSuccessListener(snapshot -> {
                     items.clear();
                     snapshot.getDocuments().forEach(doc -> {
@@ -105,9 +91,6 @@ public class ProviderHistoryActivity extends AppCompatActivity {
                                 (!TextUtils.isEmpty(serviceName) ? serviceName : "Customer Booking");
 
                         String status = displayStatus(doc.getString("status"));
-                        if (!matchesFilter(doc.getString("status"), statusFilter)) {
-                            return;
-                        }
                         String payment = displayPayment(doc.getString("paymentStatus"));
                         String logoUri = pickLogoUri(doc.getString("customerLogoUri"),
                                 doc.getString("logoUri"));
@@ -127,11 +110,11 @@ public class ProviderHistoryActivity extends AppCompatActivity {
                     });
                     items.sort((a, b) -> Long.compare(b.sortTimestamp, a.sortTimestamp));
                     adapter.notifyDataSetChanged();
-                    tvEmpty.setVisibility(items.isEmpty() ? android.view.View.VISIBLE : android.view.View.GONE);
+                    tvEmpty.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
                 })
                 .addOnFailureListener(e -> {
                     tvEmpty.setText("Unable to load history: " + e.getMessage());
-                    tvEmpty.setVisibility(android.view.View.VISIBLE);
+                    tvEmpty.setVisibility(View.VISIBLE);
                 });
     }
 
@@ -176,20 +159,6 @@ public class ProviderHistoryActivity extends AppCompatActivity {
         return TextUtils.isEmpty(value) ? "N/A" : value;
     }
 
-    private boolean matchesFilter(String status, String filter) {
-        if (TextUtils.isEmpty(filter) || "all".equalsIgnoreCase(filter)) {
-            return true;
-        }
-        String normalizedStatus = status == null ? "" : status.replace("_", " ").trim().toLowerCase(Locale.US);
-        String normalizedFilter = filter.replace("_", " ").trim().toLowerCase(Locale.US);
-        if ("on process".equals(normalizedFilter)) {
-            return normalizedStatus.equals("on process")
-                    || normalizedStatus.equals("on-process")
-                    || normalizedStatus.equals("ongoing");
-        }
-        return normalizedStatus.equals(normalizedFilter);
-    }
-
     private String formatDate(Object scheduledAt, Object createdAt) {
         Date date = toDate(scheduledAt);
         if (date == null) {
@@ -207,6 +176,9 @@ public class ProviderHistoryActivity extends AppCompatActivity {
         }
         if (value instanceof Long) {
             return new Date((Long) value);
+        }
+        if (value instanceof Date) {
+            return (Date) value;
         }
         return null;
     }

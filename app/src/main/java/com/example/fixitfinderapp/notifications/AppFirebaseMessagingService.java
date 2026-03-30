@@ -6,11 +6,12 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.text.TextUtils;
 
 import androidx.core.app.NotificationCompat;
 
 import com.example.fixitfinderapp.ChatActivity;
-import com.example.fixitfinderapp.MessagesActivity;
+import com.example.fixitfinderapp.MainTabsActivity;
 import com.example.fixitfinderapp.R;
 import com.example.fixitfinderapp.SessionManager;
 import com.google.firebase.auth.FirebaseAuth;
@@ -19,6 +20,8 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
+
+import java.util.Map;
 
 public class AppFirebaseMessagingService extends FirebaseMessagingService {
 
@@ -33,21 +36,67 @@ public class AppFirebaseMessagingService extends FirebaseMessagingService {
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
-        String title = remoteMessage.getNotification() != null
-                ? remoteMessage.getNotification().getTitle()
-                : remoteMessage.getData().get("title");
-        String body = remoteMessage.getNotification() != null
-                ? remoteMessage.getNotification().getBody()
-                : remoteMessage.getData().get("body");
-        String conversationId = remoteMessage.getData().get("conversationId");
-        String chatTitle = remoteMessage.getData().get("chatTitle");
-        String avatarUri = remoteMessage.getData().get("avatarUri");
+        Map<String, String> data = remoteMessage.getData();
 
+        String title = firstNonEmpty(
+                data.get("title"),
+                remoteMessage.getNotification() != null
+                        ? remoteMessage.getNotification().getTitle()
+                        : null);
+        String body = firstNonEmpty(
+                data.get("body"),
+                remoteMessage.getNotification() != null
+                        ? remoteMessage.getNotification().getBody()
+                        : null);
+        if (TextUtils.isEmpty(title)) {
+            title = "New message";
+        }
+        if (TextUtils.isEmpty(body)) {
+            body = "";
+        }
+
+        String targetUserId = data.get("targetUserId");
+        String conversationId = data.get("conversationId");
+        String chatTitle = firstNonEmpty(data.get("chatTitle"), title);
+        String avatarUri = data.get("avatarUri");
+        String roleFromPayload = data.get("role");
+
+        FirebaseUser current = FirebaseAuth.getInstance().getCurrentUser();
+
+        // Data-only FCM from backend includes targetUserId. Legacy messages may omit it.
+        if (TextUtils.isEmpty(targetUserId)) {
+            if (current == null) {
+                // Logged out and cannot attribute — do not show tray or queue.
+                return;
+            }
+            targetUserId = current.getUid();
+        }
+
+        boolean sameAccount = current != null && targetUserId.equals(current.getUid());
+        if (!sameAccount) {
+            PendingFcmNotificationQueue.enqueue(this, targetUserId, title, body,
+                    !TextUtils.isEmpty(roleFromPayload) ? roleFromPayload : "user",
+                    conversationId, chatTitle, avatarUri);
+            return;
+        }
+
+        String role = !TextUtils.isEmpty(roleFromPayload)
+                ? roleFromPayload
+                : SessionManager.getRole(this);
         showNotification(title, body, conversationId, chatTitle, avatarUri);
-        NotificationStore.add(this,
-                title != null ? title : "New message",
-                body != null ? body : "You have a new message",
-                System.currentTimeMillis());
+        NotificationStore.addWithSource(this,
+                title,
+                body,
+                System.currentTimeMillis(),
+                role,
+                "fcm");
+    }
+
+    private static String firstNonEmpty(String a, String b) {
+        if (!TextUtils.isEmpty(a)) {
+            return a;
+        }
+        return b != null ? b : "";
     }
 
     private void showNotification(String title, String body,
@@ -58,29 +107,30 @@ public class AppFirebaseMessagingService extends FirebaseMessagingService {
             intent = new Intent(this, ChatActivity.class);
             intent.putExtra("conversationId", conversationId);
             intent.putExtra("title", chatTitle != null ? chatTitle : "Chat");
-            intent.putExtra("avatarUri", avatarUri);
+            intent.putExtra("avatarUri", avatarUri != null ? avatarUri : "");
         } else {
-            intent = new Intent(this, MessagesActivity.class);
+            intent = new Intent(this, MainTabsActivity.class);
+            intent.putExtra(MainTabsActivity.EXTRA_INITIAL_TAB_ID, R.id.nav_messages);
         }
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this,
-                0,
+                (int) (System.currentTimeMillis() % Integer.MAX_VALUE),
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentTitle(title != null ? title : "New message")
-                .setContentText(body != null ? body : "You have a new message")
+                .setContentTitle(title)
+                .setContentText(body)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_HIGH);
 
         NotificationManager manager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        manager.notify((int) System.currentTimeMillis(), builder.build());
+        manager.notify((int) (System.currentTimeMillis() % Integer.MAX_VALUE), builder.build());
     }
 
     private void createChannel() {

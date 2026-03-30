@@ -13,7 +13,6 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -32,7 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ProviderServicesActivity extends AppCompatActivity {
+public class ProviderServicesActivity extends BaseSwipeActivity {
 
     private final List<ProviderServiceItem> services = new ArrayList<>();
     private ProviderServiceAdapter adapter;
@@ -68,7 +67,13 @@ public class ProviderServicesActivity extends AppCompatActivity {
     private void setupRecycler(RecyclerView recycler) {
         recycler.setLayoutManager(
                 new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
-        adapter = new ProviderServiceAdapter(services, true, false, this::showServiceDialog);
+        adapter = new ProviderServiceAdapter(
+                services,
+                true,
+                false,
+                this::showServiceDialog,
+                (item, position) -> confirmSwipeDelete(item, position)
+        );
         recycler.setAdapter(adapter);
     }
 

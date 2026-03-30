@@ -34,4 +34,16 @@
         android:textSize="12sp"
         android:textColor="@color/color_primary" />
 
+    <TextView
+        android:id="@+id/btnRemoveService"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:padding="6dp"
+        android:text="Remove"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="#B91C1C"
+        android:background="@drawable/button_outline_light" />
+
 </LinearLayout>

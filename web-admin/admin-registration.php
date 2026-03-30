@@ -71,6 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isRegistration) {
                 'phone' => $phone,
                 'admin_id' => $adminId,
                 'role' => $role,
+                'password_hash' => password_hash($password, PASSWORD_DEFAULT),
                 'created_at' => date('c'),
             ];
             firestore_save_admin($uid, $profile);

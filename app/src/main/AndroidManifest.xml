@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
+        android:name=".FixItFinderApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -33,11 +34,19 @@
         </activity>
 
         <activity
+            android:name=".MainTabsActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".auth.LoginActivity"
             android:exported="false" />
 
         <activity
             android:name=".auth.RegisterActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".auth.TermsAgreementActivity"
             android:exported="false" />
 
         <activity
@@ -50,6 +59,14 @@
 
         <activity
             android:name=".auth.OtpActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".auth.ForgotPasswordActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".auth.ResetPasswordActivity"
             android:exported="false" />
 
         <activity
@@ -70,13 +87,28 @@
         <activity
             android:name=".UserProfileActivity"
             android:exported="false" />
-
         <activity
-            android:name=".NotificationsActivity"
+            android:name=".AppLockActivity"
+            android:exported="false" />
+        <activity
+            android:name=".EditProfileActivity"
             android:exported="false" />
 
         <activity
+            android:name=".NotificationsActivity"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="OPEN_NOTIFICATIONS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name=".ProviderSettingsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ProviderDocumentsActivity"
             android:exported="false" />
 
         <activity
@@ -112,6 +144,10 @@
             android:exported="false" />
         <activity
             android:name=".BookingScheduleActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".TransactionDetailsActivity"
             android:exported="false" />
         <activity
             android:name=".BookingConfirmationActivity"
@@ -158,6 +194,10 @@
 
         <activity
             android:name=".payment.PaymentActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".SubscriptionActivity"
             android:exported="false" />
 
         <activity

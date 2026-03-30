@@ -14,3 +14,5 @@
 .cxx
 local.properties
 web-admin/credentials/*.json
+web-admin/.firebase/
+/functions/node_modules

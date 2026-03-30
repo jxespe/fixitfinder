@@ -7,7 +7,6 @@ import android.widget.ImageView;
 import android.widget.Toast;
 import android.util.Log;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -24,7 +23,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-public class MessagesActivity extends AppCompatActivity {
+public class MessagesActivity extends BaseSwipeActivity {
 
     private static final String TAG = "MessagesActivity";
     private final List<ConversationItem> items = new ArrayList<>();
@@ -58,6 +57,9 @@ public class MessagesActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         NavigationHelper.ensureLoggedIn(this);
+        com.google.android.material.bottomnavigation.BottomNavigationView bottomNavigation =
+                findViewById(R.id.bottomNavigation);
+        NavigationHelper.updateMessageBadge(this, bottomNavigation);
     }
 
     private void loadConversations() {

@@ -14,11 +14,11 @@
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="@dimen/back_btn_width"
+            android:layout_height="@dimen/back_btn_height"
             android:background="@android:color/transparent"
             android:contentDescription="Back"
-            android:src="@android:drawable/ic_media_previous"
+            android:src="@drawable/ic_back_chevron"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -161,11 +161,80 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Minimum 8 characters with numbers and letters"
+            android:text="Password requirements"
             android:textColor="@color/text_gray"
             android:textSize="12sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/passwordContainer" />
+
+        <TextView
+            android:id="@+id/tvPasswordRuleLength"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="• 8+ characters"
+            android:textColor="@color/text_gray"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvPasswordHelp" />
+
+        <TextView
+            android:id="@+id/tvPasswordRuleLetter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="• At least 1 letter"
+            android:textColor="@color/text_gray"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvPasswordRuleLength" />
+
+        <TextView
+            android:id="@+id/tvPasswordRuleNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="• At least 1 number"
+            android:textColor="@color/text_gray"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvPasswordRuleLetter" />
+
+        <TextView
+            android:id="@+id/tvConfirmPasswordLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Confirm Password"
+            android:textColor="@color/color_text_dark"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvPasswordRuleNumber" />
+
+        <EditText
+            android:id="@+id/edtConfirmPassword"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/edittext_background"
+            android:hint="Re-enter your password"
+            android:inputType="textPassword"
+            android:padding="12dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvConfirmPasswordLabel" />
+
+        <TextView
+            android:id="@+id/tvPasswordRuleMatch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="• Passwords match"
+            android:textColor="@color/text_gray"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/edtConfirmPassword" />
 
         <TextView
             android:id="@+id/tvPhoneLabel"
@@ -177,7 +246,7 @@
             android:textSize="14sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tvPasswordHelp" />
+            app:layout_constraintTop_toBottomOf="@+id/tvPasswordRuleMatch" />
 
         <LinearLayout
             android:id="@+id/phoneContainer"
@@ -270,62 +339,22 @@
             app:layout_constraintTop_toBottomOf="@+id/tvCategoryLabel" />
 
         <TextView
-            android:id="@+id/tvIdLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Identifications/Valid ID"
-            android:textColor="@color/color_text_dark"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/spinnerServiceCategory" />
-
-        <LinearLayout
-            android:id="@+id/layoutIdButtons"
+            android:id="@+id/tvDocsHint"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal"
+            android:layout_marginTop="16dp"
+            android:text="After you verify your phone, upload ID/DTI, BIR, and Business Permit under Settings or tap your verification status on the home screen."
+            android:textColor="@color/text_gray"
+            android:textSize="12sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tvIdLabel">
-
-            <Button
-                android:id="@+id/btnId1"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="8dp"
-                android:layout_weight="1"
-                android:background="@drawable/button_outline_light"
-                android:text="ID 1"
-                android:textColor="@color/color_background" />
-
-            <Button
-                android:id="@+id/btnId2"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="8dp"
-                android:layout_weight="1"
-                android:background="@drawable/button_outline_light"
-                android:text="ID 2"
-                android:textColor="@color/color_background" />
-
-            <Button
-                android:id="@+id/btnId3"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:background="@drawable/button_outline_light"
-                android:text="ID 3"
-                android:textColor="@color/color_background" />
-        </LinearLayout>
+            app:layout_constraintTop_toBottomOf="@+id/spinnerServiceCategory" />
 
         <Button
             android:id="@+id/btnRegister"
             android:layout_width="0dp"
             android:layout_height="48dp"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="20dp"
             android:layout_marginBottom="16dp"
             android:background="@drawable/button_rounded_primary"
             android:text="Submit"
@@ -333,7 +362,8 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/layoutIdButtons" />
+            app:layout_constraintTop_toBottomOf="@+id/tvDocsHint" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>
+

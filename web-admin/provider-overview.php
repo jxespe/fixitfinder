@@ -1,9 +1,41 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . "/includes/auth.php";
+require_once __DIR__ . "/includes/firebase.php";
 require_login();
 
-$providers = $pdo->query("SELECT * FROM providers ORDER BY id ASC")->fetchAll();
+$providers = [];
+$usingFirestore = false;
+$documentsByProvider = [];
+try {
+    $firestoreProviders = firestore_list_collection('providers', 'createdAt');
+    if (!empty($firestoreProviders)) {
+        foreach ($firestoreProviders as $provider) {
+            $providers[] = [
+                'id' => $provider['id'] ?? '',
+                'name' => $provider['fullName'] ?? ($provider['name'] ?? 'Provider'),
+                'service_type' => $provider['serviceCategory'] ?? ($provider['serviceType'] ?? 'Service'),
+                'branch' => $provider['branch'] ?? ($provider['address'] ?? 'N/A'),
+                'status' => $provider['status'] ?? 'Active',
+                'verified' => $provider['verified'] ?? ($provider['phoneVerified'] ?? false),
+            ];
+        }
+        $usingFirestore = true;
+        $docs = firestore_list_collection('provider_documents', 'submittedAt');
+        foreach ($docs as $doc) {
+            $providerId = (string) ($doc['providerId'] ?? '');
+            if ($providerId !== '') {
+                $documentsByProvider[$providerId] = true;
+            }
+        }
+    }
+} catch (RuntimeException $e) {
+    $usingFirestore = false;
+}
+
+if (!$usingFirestore) {
+    $providers = $pdo->query("SELECT * FROM providers ORDER BY id ASC")->fetchAll();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -46,7 +78,7 @@ $providers = $pdo->query("SELECT * FROM providers ORDER BY id ASC")->fetchAll();
                 <th>Status</th>
                 <th>Verified</th>
                 <th>Profile</th>
-                <th>Documents</th>
+                <th>Registration</th>
               </tr>
             </thead>
             <tbody>
@@ -57,21 +89,33 @@ $providers = $pdo->query("SELECT * FROM providers ORDER BY id ASC")->fetchAll();
               <?php else : ?>
               <?php foreach ($providers as $provider) : ?>
               <tr>
-                <td><?php echo (int) $provider['id']; ?></td>
+                <td><?php echo htmlspecialchars((string) $provider['id'], ENT_QUOTES); ?></td>
                 <td><?php echo htmlspecialchars($provider['name'], ENT_QUOTES); ?></td>
                 <td><?php echo htmlspecialchars($provider['service_type'], ENT_QUOTES); ?></td>
                 <td><?php echo htmlspecialchars($provider['branch'], ENT_QUOTES); ?></td>
                 <td><?php echo htmlspecialchars($provider['status'], ENT_QUOTES); ?></td>
-                <td><?php echo (int) $provider['verified'] === 1 ? 'Yes' : 'No'; ?></td>
+                <td><?php echo !empty($provider['verified']) ? 'Yes' : 'No'; ?></td>
                 <td>
-                  <a class="status-open" href="./provider-profile.php?id=<?php echo (int) $provider['id']; ?>">
+                  <a
+                    class="status-open"
+                    href="./provider-profile.php?<?php echo $usingFirestore ? 'uid=' . urlencode((string) $provider['id']) : 'id=' . (int) $provider['id']; ?>"
+                  >
                     Open
                   </a>
                 </td>
                 <td>
-                  <a class="status-open" href="./provider-documents.php?provider_id=<?php echo (int) $provider['id']; ?>">
-                    View
-                  </a>
+                  <?php if ($usingFirestore) : ?>
+                    <a
+                      class="status-open"
+                      href="./provider-documents.php?provider_uid=<?php echo urlencode((string) $provider['id']); ?>"
+                    >
+                      <?php echo !empty($documentsByProvider[(string) $provider['id']]) ? 'Submitted' : 'Missing'; ?>
+                    </a>
+                  <?php else : ?>
+                    <a class="status-open" href="./provider-documents.php?provider_id=<?php echo (int) $provider['id']; ?>">
+                      Registration
+                    </a>
+                  <?php endif; ?>
                 </td>
               </tr>
               <?php endforeach; ?>

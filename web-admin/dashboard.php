@@ -1,9 +1,32 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . "/includes/auth.php";
+require_once __DIR__ . "/includes/firebase.php";
 require_login();
 
-$providers = $pdo->query("SELECT * FROM providers ORDER BY id ASC LIMIT 8")->fetchAll();
+$providers = [];
+$usingFirestore = false;
+try {
+    $firestoreProviders = firestore_list_collection('providers', 'createdAt', 'DESCENDING', 8);
+    if (!empty($firestoreProviders)) {
+        foreach ($firestoreProviders as $provider) {
+            $providers[] = [
+                'id' => $provider['id'] ?? '',
+                'name' => $provider['fullName'] ?? ($provider['name'] ?? 'Provider'),
+                'branch' => $provider['branch'] ?? ($provider['address'] ?? 'N/A'),
+                'status' => $provider['status'] ?? 'Active',
+                'verified' => $provider['verified'] ?? ($provider['phoneVerified'] ?? false),
+            ];
+        }
+        $usingFirestore = true;
+    }
+} catch (RuntimeException $e) {
+    $usingFirestore = false;
+}
+
+if (!$usingFirestore) {
+    $providers = $pdo->query("SELECT * FROM providers ORDER BY id ASC LIMIT 8")->fetchAll();
+}
 $loginFlash = get_flash('login_success');
 ?>
 <!DOCTYPE html>
@@ -260,15 +283,18 @@ $loginFlash = get_flash('login_success');
                 <?php else : ?>
                 <?php foreach ($providers as $provider) : ?>
                 <tr>
-                  <td>20<?php echo str_pad((string) $provider['id'], 5, '0', STR_PAD_LEFT); ?></td>
+                  <td><?php echo htmlspecialchars((string) $provider['id'], ENT_QUOTES); ?></td>
                   <td><?php echo htmlspecialchars($provider['name'], ENT_QUOTES); ?></td>
                   <td><?php echo htmlspecialchars($provider['branch'], ENT_QUOTES); ?></td>
                   <td>2023-24</td>
                   <td><?php echo htmlspecialchars($provider['status'], ENT_QUOTES); ?></td>
                   <td>Registered</td>
-                  <td><?php echo (int) $provider['verified'] === 1 ? 'Verified' : 'Pending'; ?></td>
+                  <td><?php echo !empty($provider['verified']) ? 'Verified' : 'Pending'; ?></td>
                   <td>
-                    <a class="status-open" href="./provider-profile.php?id=<?php echo (int) $provider['id']; ?>">
+                    <a
+                      class="status-open"
+                      href="./provider-profile.php?<?php echo $usingFirestore ? 'uid=' . urlencode((string) $provider['id']) : 'id=' . (int) $provider['id']; ?>"
+                    >
                       Open
                     </a>
                   </td>

@@ -3,36 +3,48 @@ package com.example.fixitfinderapp;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.view.View;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import android.text.TextUtils;
 
+import com.example.fixitfinderapp.notifications.PendingFcmNotificationQueue;
 import com.example.fixitfinderapp.notifications.ReminderScheduler;
 
 
 /**
  * User home/dashboard screen that shows the service categories grid.
  */
-public class UserDashboardActivity extends AppCompatActivity {
+public class UserDashboardActivity extends BaseSwipeActivity {
+
+    private static final int REQ_NOTIFICATIONS = 1101;
+    private TextView tvNotificationBadge;
+    private ListenerRegistration notificationListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_homepage);
 
-        // Subscribe button – you can later navigate to a real SubscriptionActivity here
         Button btnSubscribe = findViewById(R.id.btnSubscribe);
         btnSubscribe.setOnClickListener(v ->
-                Toast.makeText(this, "Subscribe flow coming soon", Toast.LENGTH_SHORT).show());
+                startActivity(new Intent(this, SubscriptionActivity.class)));
 
         TextView tvGreeting = findViewById(R.id.tvGreeting);
         setGreeting(tvGreeting);
@@ -40,6 +52,7 @@ public class UserDashboardActivity extends AppCompatActivity {
         loadProfilePhoto(ivUserProfile);
         wireProfileTaps(ivUserProfile);
         wireNotificationsIcon();
+        tvNotificationBadge = findViewById(R.id.tvNotificationBadge);
 
         wireCategoryCards();
 
@@ -52,7 +65,31 @@ public class UserDashboardActivity extends AppCompatActivity {
         NavigationHelper.ensureLoggedIn(this);
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) {
+            PendingFcmNotificationQueue.drainForUser(this, user.getUid());
             ReminderScheduler.scheduleAcceptedReminders(this, user.getUid());
+            com.example.fixitfinderapp.notifications.BookingUpdateListener.getInstance()
+                    .start(this);
+            requestNotificationPermission();
+            updateNotificationBadge();
+            com.google.android.material.bottomnavigation.BottomNavigationView bottomNavigation =
+                    findViewById(R.id.bottomNavigation);
+            NavigationHelper.updateMessageBadge(this, bottomNavigation);
+            startNotificationBadgeListener(user.getUid());
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateNotificationBadge();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (notificationListener != null) {
+            notificationListener.remove();
+            notificationListener = null;
         }
     }
 
@@ -89,7 +126,7 @@ public class UserDashboardActivity extends AppCompatActivity {
     }
 
     private void wireNotificationsIcon() {
-        ImageView bell = findViewById(R.id.ivHelp);
+        ImageView bell = findViewById(R.id.ivNotification);
         if (bell == null) {
             return;
         }
@@ -158,7 +195,7 @@ public class UserDashboardActivity extends AppCompatActivity {
         }
         for (ImageView view : views) {
             if (view != null) {
-                ImageLoader.load(view, uriString, 0);
+                ImageLoader.loadProfile(view, uriString, 0);
             }
         }
     }
@@ -184,6 +221,105 @@ public class UserDashboardActivity extends AppCompatActivity {
         }
         String[] parts = name.trim().split("\\s+");
         return parts.length > 0 ? parts[0] : name;
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            refreshFcmToken();
+            return;
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                == PackageManager.PERMISSION_GRANTED) {
+            refreshFcmToken();
+            return;
+        }
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                REQ_NOTIFICATIONS);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String[] permissions,
+                                           int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQ_NOTIFICATIONS
+                && grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            refreshFcmToken();
+        }
+    }
+
+    private void refreshFcmToken() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+            return;
+        }
+        FirebaseMessaging.getInstance().getToken()
+                .addOnSuccessListener(token -> {
+                    if (TextUtils.isEmpty(token)) {
+                        return;
+                    }
+                    java.util.Map<String, Object> data = new java.util.HashMap<>();
+                    data.put("fcmToken", token);
+                    FirebaseFirestore.getInstance()
+                            .collection("users")
+                            .document(user.getUid())
+                            .set(data, SetOptions.merge());
+                });
+    }
+
+    private void updateNotificationBadge() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null || tvNotificationBadge == null) {
+            return;
+        }
+        FirebaseFirestore.getInstance()
+                .collection("notifications")
+                .whereEqualTo("userId", user.getUid())
+                .whereEqualTo("seen", false)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .limit(99)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    int count = snapshot.size();
+                    if (count <= 0) {
+                        tvNotificationBadge.setVisibility(View.GONE);
+                        return;
+                    }
+                    tvNotificationBadge.setVisibility(View.VISIBLE);
+                    tvNotificationBadge.setText(count >= 99 ? "99+" : String.valueOf(count));
+                })
+                .addOnFailureListener(e -> {
+                    // Keep last badge state on transient or index errors.
+                });
+    }
+
+    private void startNotificationBadgeListener(String userId) {
+        if (tvNotificationBadge == null || TextUtils.isEmpty(userId)) {
+            return;
+        }
+        if (notificationListener != null) {
+            notificationListener.remove();
+        }
+        notificationListener = FirebaseFirestore.getInstance()
+                .collection("notifications")
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("seen", false)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .limit(99)
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null || snapshot == null) {
+                        return;
+                    }
+                    int count = snapshot.size();
+                    if (count <= 0) {
+                        tvNotificationBadge.setVisibility(View.GONE);
+                        return;
+                    }
+                    tvNotificationBadge.setVisibility(View.VISIBLE);
+                    tvNotificationBadge.setText(count >= 99 ? "99+" : String.valueOf(count));
+                });
     }
 
 }

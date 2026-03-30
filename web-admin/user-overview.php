@@ -1,9 +1,32 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . "/includes/auth.php";
+require_once __DIR__ . "/includes/firebase.php";
 require_login();
 
-$users = $pdo->query("SELECT * FROM users ORDER BY id ASC")->fetchAll();
+$users = [];
+$usingFirestore = false;
+try {
+    $firestoreUsers = firestore_list_collection('users', 'createdAt');
+    if (!empty($firestoreUsers)) {
+        foreach ($firestoreUsers as $user) {
+            $users[] = [
+                'id' => $user['id'] ?? '',
+                'full_name' => $user['fullName'] ?? ($user['name'] ?? 'User'),
+                'email' => $user['email'] ?? '',
+                'phone' => $user['phone'] ?? '',
+                'verified' => $user['verified'] ?? ($user['phoneVerified'] ?? false),
+            ];
+        }
+        $usingFirestore = true;
+    }
+} catch (RuntimeException $e) {
+    $usingFirestore = false;
+}
+
+if (!$usingFirestore) {
+    $users = $pdo->query("SELECT * FROM users ORDER BY id ASC")->fetchAll();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -55,13 +78,16 @@ $users = $pdo->query("SELECT * FROM users ORDER BY id ASC")->fetchAll();
               <?php else : ?>
               <?php foreach ($users as $user) : ?>
               <tr>
-                <td><?php echo (int) $user['id']; ?></td>
+                <td><?php echo htmlspecialchars((string) $user['id'], ENT_QUOTES); ?></td>
                 <td><?php echo htmlspecialchars($user['full_name'], ENT_QUOTES); ?></td>
                 <td><?php echo htmlspecialchars((string) $user['email'], ENT_QUOTES); ?></td>
                 <td><?php echo htmlspecialchars((string) $user['phone'], ENT_QUOTES); ?></td>
-                <td><?php echo (int) $user['verified'] === 1 ? 'Verified' : 'Pending'; ?></td>
+                <td><?php echo !empty($user['verified']) ? 'Verified' : 'Pending'; ?></td>
                 <td>
-                  <a class="status-open" href="./user-detail.php?id=<?php echo (int) $user['id']; ?>">Open</a>
+                  <a
+                    class="status-open"
+                    href="./user-detail.php?<?php echo $usingFirestore ? 'uid=' . urlencode((string) $user['id']) : 'id=' . (int) $user['id']; ?>"
+                  >Open</a>
                 </td>
               </tr>
               <?php endforeach; ?>

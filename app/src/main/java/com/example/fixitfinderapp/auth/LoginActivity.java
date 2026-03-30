@@ -6,21 +6,25 @@ import android.text.TextUtils;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
-import androidx.appcompat.app.AppCompatActivity;
+import android.widget.ImageView;
+import android.text.method.PasswordTransformationMethod;
+import com.example.fixitfinderapp.BaseSwipeActivity;
 import android.content.SharedPreferences;
 
-import com.example.fixitfinderapp.DashboardActivity;
+import com.example.fixitfinderapp.MainTabsActivity;
+import com.example.fixitfinderapp.NavigationHelper;
 import com.example.fixitfinderapp.R;
-import com.example.fixitfinderapp.UserDashboardActivity;
-import com.example.fixitfinderapp.auth.OtpActivity;
+import com.example.fixitfinderapp.SessionManager;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.messaging.FirebaseMessaging;
 
-public class LoginActivity extends AppCompatActivity {
+public class LoginActivity extends BaseSwipeActivity {
 
     private FirebaseAuth auth;
     private FirebaseFirestore db;
+    private boolean isPasswordVisible = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +39,7 @@ public class LoginActivity extends AppCompatActivity {
         Button btnLogin = findViewById(R.id.btnLogin);
         Button btnRegister = findViewById(R.id.btnRegister);
         Button btnSwitchToProvider = findViewById(R.id.btnSwitchToProvider);
+        ImageView btnPasswordToggle = findViewById(R.id.btnPasswordToggle);
 
         Intent intent = getIntent();
         if (intent != null && intent.hasExtra("email")) {
@@ -49,6 +54,21 @@ public class LoginActivity extends AppCompatActivity {
             if (!TextUtils.isEmpty(lastOAuthEmail)) {
                 edtEmail.setText(lastOAuthEmail);
             }
+        }
+
+        if (btnPasswordToggle != null) {
+            btnPasswordToggle.setOnClickListener(v -> {
+                if (isPasswordVisible) {
+                    edtPassword.setTransformationMethod(new PasswordTransformationMethod());
+                    btnPasswordToggle.setImageResource(R.drawable.ic_eye_open);
+                    isPasswordVisible = false;
+                } else {
+                    edtPassword.setTransformationMethod(null);
+                    btnPasswordToggle.setImageResource(R.drawable.ic_eye_slash);
+                    isPasswordVisible = true;
+                }
+                edtPassword.setSelection(edtPassword.getText().length());
+            });
         }
 
         final String role = intent != null && intent.hasExtra("role")
@@ -100,8 +120,18 @@ public class LoginActivity extends AppCompatActivity {
         btnRegister.setOnClickListener(v ->
                 startActivity(new Intent(this, RegisterActivity.class)));
 
+        android.widget.Button btnForgot = findViewById(R.id.btnForgotPassword);
+        if (btnForgot != null) {
+            btnForgot.setOnClickListener(v -> {
+                Intent fp = new Intent(this, ForgotPasswordActivity.class);
+                fp.putExtra(ForgotPasswordActivity.EXTRA_ROLE_FILTER, "user");
+                startActivity(fp);
+            });
+        }
+
         btnSwitchToProvider.setOnClickListener(v ->
                 startActivity(new Intent(this, ProviderLoginActivity.class)));
+
     }
 
     @Override
@@ -145,10 +175,11 @@ public class LoginActivity extends AppCompatActivity {
                         return;
                     }
                     if (!verified) {
-                        goToOtp(phone, resolvedRole);
+                        handleIncompleteRegistration();
                         return;
                     }
-                    com.example.fixitfinderapp.SessionManager.saveRole(this, resolvedRole);
+                    SessionManager.saveRole(this, resolvedRole);
+                    updateFcmToken("users");
                     Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
                     if ("provider".equalsIgnoreCase(resolvedRole)) {
                         goToProviderDashboard();
@@ -156,29 +187,42 @@ public class LoginActivity extends AppCompatActivity {
                         goToUserDashboard();
                     }
                 })
-                .addOnFailureListener(e -> goToOtp(null, fallbackRole));
+                .addOnFailureListener(e -> handleIncompleteRegistration());
     }
 
-    private void goToOtp(String phone, String role) {
-        Intent intent = new Intent(this, OtpActivity.class);
-        if (phone != null) {
-            intent.putExtra("phone", phone);
-        }
-        intent.putExtra("role", role);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
+    private void handleIncompleteRegistration() {
+        SessionManager.clear(this);
+        FirebaseAuth.getInstance().signOut();
+        Toast.makeText(this, "Please complete registration to continue.", Toast.LENGTH_LONG).show();
     }
 
     private void goToUserDashboard() {
-        Intent intent = new Intent(this, UserDashboardActivity.class);
+        Intent intent = new Intent(this, MainTabsActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
     }
 
     private void goToProviderDashboard() {
-        Intent intent = new Intent(this, DashboardActivity.class);
+        Intent intent = new Intent(this, MainTabsActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
+    }
+
+    private void updateFcmToken(String collection) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null || TextUtils.isEmpty(collection)) {
+            return;
+        }
+        FirebaseMessaging.getInstance().getToken()
+                .addOnSuccessListener(token -> {
+                    if (TextUtils.isEmpty(token)) {
+                        return;
+                    }
+                    java.util.Map<String, Object> data = new java.util.HashMap<>();
+                    data.put("fcmToken", token);
+                    db.collection(collection)
+                            .document(user.getUid())
+                            .set(data, com.google.firebase.firestore.SetOptions.merge());
+                });
     }
 }

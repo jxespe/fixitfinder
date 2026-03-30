@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="test_menu_spacing">12dp</dimen>
+    <dimen name="bottom_nav_padding">140dp</dimen>
+    <dimen name="back_btn_width">24dp</dimen>
+    <dimen name="back_btn_height">48dp</dimen>
+    <!-- Extra scroll bottom gap beyond system bar (see FixItFinderApplication insets) -->
+    <dimen name="scroll_content_bottom_gap">16dp</dimen>
 </resources>

@@ -1,9 +1,47 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . "/includes/auth.php";
+require_once __DIR__ . "/includes/firebase.php";
 require_login();
 
-$providers = $pdo->query("SELECT * FROM providers ORDER BY id ASC")->fetchAll();
+$providers = [];
+$categories = [];
+$usingFirestore = false;
+try {
+    $firestoreProviders = firestore_list_collection('providers', 'createdAt');
+    if (!empty($firestoreProviders)) {
+        foreach ($firestoreProviders as $provider) {
+            $serviceType = (string) ($provider['serviceCategory'] ?? ($provider['serviceType'] ?? 'Service'));
+            $providers[] = [
+                'id' => $provider['id'] ?? '',
+                'name' => $provider['fullName'] ?? ($provider['name'] ?? 'Provider'),
+                'service_type' => $serviceType,
+            ];
+            if ($serviceType !== '') {
+                if (!isset($categories[$serviceType])) {
+                    $categories[$serviceType] = 0;
+                }
+                $categories[$serviceType]++;
+            }
+        }
+        $usingFirestore = true;
+    }
+} catch (RuntimeException $e) {
+    $usingFirestore = false;
+}
+
+if (!$usingFirestore) {
+    $providers = $pdo->query("SELECT * FROM providers ORDER BY id ASC")->fetchAll();
+    foreach ($providers as $provider) {
+        $serviceType = (string) ($provider['service_type'] ?? 'Service');
+        if (!isset($categories[$serviceType])) {
+            $categories[$serviceType] = 0;
+        }
+        $categories[$serviceType]++;
+    }
+}
+
+ksort($categories, SORT_NATURAL | SORT_FLAG_CASE);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -13,38 +51,44 @@ $providers = $pdo->query("SELECT * FROM providers ORDER BY id ASC")->fetchAll();
     <title>Fix It Finder Admin - Service Providers</title>
     <link rel="stylesheet" href="./styles.css" />
     <style>
-      .provider-grid {
+      .category-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 40px;
-        padding: 40px 10px;
-        place-items: center;
+        gap: 24px;
+        padding: 24px 10px;
       }
 
-      .provider-logo {
-        width: 140px;
-        height: 140px;
-        border-radius: 50%;
-        border: 1px solid #cfcfcf;
-        display: grid;
-        place-items: center;
+      .category-card {
+        border-radius: 18px;
+        border: 1px solid #e3e3e3;
         background: #fff;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        text-decoration: none;
+        color: inherit;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
       }
 
-      .provider-logo img {
-        width: 92px;
-        height: 92px;
-        object-fit: contain;
+      .category-title {
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .category-count {
+        font-size: 12px;
+        color: var(--text-muted);
       }
 
       @media (max-width: 900px) {
-        .provider-grid {
+        .category-grid {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
       }
 
       @media (max-width: 600px) {
-        .provider-grid {
+        .category-grid {
           grid-template-columns: 1fr;
         }
       }
@@ -72,20 +116,18 @@ $providers = $pdo->query("SELECT * FROM providers ORDER BY id ASC")->fetchAll();
 
       <div class="container">
         <div class="card">
-          <div class="section-title">Service Providers</div>
-          <div class="provider-grid">
-            <?php foreach ($providers as $provider) : ?>
-            <a
-              class="provider-logo"
-              href="./provider-profile.php?id=<?php echo (int) $provider['id']; ?>"
-              style="<?php echo $provider['name'] === 'Craft Fix' ? 'width: 170px; height: 170px;' : ''; ?>"
-            >
-              <img
-                src="./assets/<?php echo htmlspecialchars($provider['logo'], ENT_QUOTES); ?>"
-                alt="<?php echo htmlspecialchars($provider['name'], ENT_QUOTES); ?>"
-              />
-            </a>
-            <?php endforeach; ?>
+          <div class="section-title">Service Provider Categories</div>
+          <div class="category-grid">
+            <?php if (!$categories) : ?>
+              <div class="subtle">No provider categories available.</div>
+            <?php else : ?>
+              <?php foreach ($categories as $category => $count) : ?>
+                <a class="category-card" href="./provider-category.php?category=<?php echo urlencode((string) $category); ?>">
+                  <div class="category-title"><?php echo htmlspecialchars((string) $category, ENT_QUOTES); ?></div>
+                  <div class="category-count"><?php echo (int) $count; ?> provider(s)</div>
+                </a>
+              <?php endforeach; ?>
+            <?php endif; ?>
           </div>
         </div>
       </div>

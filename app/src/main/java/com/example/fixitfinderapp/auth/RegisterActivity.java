@@ -14,10 +14,17 @@ import android.widget.Spinner;
 import android.widget.Toast;
 import android.util.Log;
 import android.content.SharedPreferences;
-import androidx.appcompat.app.AppCompatActivity;
+import android.graphics.Color;
+import com.example.fixitfinderapp.BaseSwipeActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 
+import com.example.fixitfinderapp.NavigationHelper;
 import com.example.fixitfinderapp.R;
 import com.example.fixitfinderapp.auth.OtpActivity;
+import com.example.fixitfinderapp.SessionManager;
+import com.example.fixitfinderapp.MainTabsActivity;
+import com.example.fixitfinderapp.maps.AddressGeocoder;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -40,7 +47,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RegisterActivity extends AppCompatActivity {
+public class RegisterActivity extends BaseSwipeActivity {
 
     private static final int RC_GOOGLE_SIGN_IN = 9001;
     private static final String TAG = "RegisterActivity";
@@ -48,9 +55,17 @@ public class RegisterActivity extends AppCompatActivity {
     private FirebaseAuth auth;
     private FirebaseFirestore db;
     private EditText edtEmail;
+    private EditText edtFullName;
     private EditText edtPhone;
     private EditText edtPassword;
+    private EditText edtConfirmPassword;
     private EditText edtAddress;
+    private android.widget.CheckBox cbTerms;
+    private android.widget.TextView tvViewTerms;
+    private android.widget.TextView tvPasswordRuleLength;
+    private android.widget.TextView tvPasswordRuleLetter;
+    private android.widget.TextView tvPasswordRuleNumber;
+    private android.widget.TextView tvPasswordRuleMatch;
     private Button btnRegister;
     private Button btnGoogle;
     private Button btnFacebook;
@@ -60,6 +75,8 @@ public class RegisterActivity extends AppCompatActivity {
     private GoogleSignInClient googleSignInClient;
     private Spinner spinnerCountryCode;
     private boolean isFormattingPhone = false;
+    private ActivityResultLauncher<Intent> termsLauncher;
+    private boolean isOauthFlow = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,20 +86,40 @@ public class RegisterActivity extends AppCompatActivity {
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
+        edtFullName = findViewById(R.id.edtFullName);
         edtEmail = findViewById(R.id.edtEmail);
         edtPhone = findViewById(R.id.edtPhone);
         edtAddress = findViewById(R.id.edtAddress);
         edtPassword = findViewById(R.id.edtPassword);
+        edtConfirmPassword = findViewById(R.id.edtConfirmPassword);
+        tvPasswordRuleLength = findViewById(R.id.tvPasswordRuleLength);
+        tvPasswordRuleLetter = findViewById(R.id.tvPasswordRuleLetter);
+        tvPasswordRuleNumber = findViewById(R.id.tvPasswordRuleNumber);
+        tvPasswordRuleMatch = findViewById(R.id.tvPasswordRuleMatch);
         btnRegister = findViewById(R.id.btnRegister);
         btnGoogle = findViewById(R.id.btnGoogle);
         btnFacebook = findViewById(R.id.btnFacebook);
         btnAppleId = findViewById(R.id.btnAppleId);
         spinnerCountryCode = findViewById(R.id.spinnerCountryCode);
+        cbTerms = findViewById(R.id.cbTerms);
+        tvViewTerms = findViewById(R.id.tvViewTerms);
         ImageButton btnBack = findViewById(R.id.btnBack);
 
         btnBack.setOnClickListener(v -> finish());
+        prefillFromOtp(getIntent());
+
+        termsLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && cbTerms != null) {
+                        cbTerms.setChecked(true);
+                        cbTerms.setEnabled(true);
+                    }
+                }
+        );
 
         setupPhoneFormatting();
+        setupPasswordWatchers();
 
         // Password toggle functionality
         btnPasswordToggle = findViewById(R.id.btnPasswordToggle);
@@ -117,13 +154,36 @@ public class RegisterActivity extends AppCompatActivity {
             btnAppleId.setOnClickListener(v -> startOAuthProviderSignIn("apple.com"));
         }
 
+        if (cbTerms != null) {
+            cbTerms.setChecked(false);
+            cbTerms.setEnabled(false);
+        }
+        if (tvViewTerms != null) {
+            tvViewTerms.setOnClickListener(v -> {
+                Intent intent = new Intent(RegisterActivity.this, TermsAgreementActivity.class);
+                termsLauncher.launch(intent);
+            });
+        }
+
         btnRegister.setOnClickListener(v -> {
+            String fullName = edtFullName != null ? edtFullName.getText().toString().trim() : "";
             String email = edtEmail.getText().toString().trim();
             String phone = buildPhoneNumber();
             String address = edtAddress.getText().toString().trim();
             String password = edtPassword.getText().toString().trim();
+            String confirmPassword = edtConfirmPassword != null
+                    ? edtConfirmPassword.getText().toString().trim()
+                    : "";
 
             // Validation
+            if (TextUtils.isEmpty(fullName)) {
+                if (edtFullName != null) {
+                    edtFullName.setError("Name is required");
+                    edtFullName.requestFocus();
+                }
+                return;
+            }
+
             if (TextUtils.isEmpty(email)) {
                 edtEmail.setError("Email is required");
                 edtEmail.requestFocus();
@@ -154,9 +214,30 @@ public class RegisterActivity extends AppCompatActivity {
                 return;
             }
 
+            if (TextUtils.isEmpty(confirmPassword)) {
+                if (edtConfirmPassword != null) {
+                    edtConfirmPassword.setError("Please confirm your password");
+                    edtConfirmPassword.requestFocus();
+                }
+                return;
+            }
+
+            if (!password.equals(confirmPassword)) {
+                if (edtConfirmPassword != null) {
+                    edtConfirmPassword.setError("Passwords do not match");
+                    edtConfirmPassword.requestFocus();
+                }
+                return;
+            }
+
             if (TextUtils.isEmpty(address)) {
                 edtAddress.setError("Address is required");
                 edtAddress.requestFocus();
+                return;
+            }
+
+            if (cbTerms == null || !cbTerms.isChecked()) {
+                Toast.makeText(RegisterActivity.this, "Please accept the Terms and Conditions", Toast.LENGTH_LONG).show();
                 return;
             }
 
@@ -164,39 +245,43 @@ public class RegisterActivity extends AppCompatActivity {
             btnRegister.setEnabled(false);
             btnRegister.setText("Submitting...");
 
+            if (isOauthFlow) {
+                FirebaseUser user = auth.getCurrentUser();
+                if (user == null) {
+                    btnRegister.setEnabled(true);
+                    btnRegister.setText("Submit");
+                    Toast.makeText(this, "Please log in again.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                completeOauthProfile(user, fullName, email, phone, address, password);
+                return;
+            }
+
             // Create user with Firebase Authentication
-            auth.createUserWithEmailAndPassword(email, password)
-                    .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                        @Override
-                        public void onComplete(Task<AuthResult> task) {
-                            if (task.isSuccessful()) {
-                                // User created successfully, now save to Firestore
-                                FirebaseUser user = auth.getCurrentUser();
-                                if (user != null) {
-                                    saveUserToFirestore(user.getUid(), email, phone, address);
-                                }
-                            } else {
-                                // Registration failed
-                                btnRegister.setEnabled(true);
-                                btnRegister.setText("Submit");
-                                
-                                String errorMessage = "Registration failed";
-                                if (task.getException() != null) {
-                                    errorMessage = task.getException().getMessage();
-                                }
-                                Toast.makeText(RegisterActivity.this, errorMessage, Toast.LENGTH_LONG).show();
-                            }
-                        }
-                    });
+            Intent intent = new Intent(RegisterActivity.this, OtpActivity.class);
+            intent.putExtra("phone", phone);
+            intent.putExtra("role", "user");
+            intent.putExtra("email", email);
+            intent.putExtra("password", password);
+            intent.putExtra("fullName", fullName);
+            intent.putExtra("address", address);
+            startActivity(intent);
+            finish();
         });
     }
 
-    private void saveUserToFirestore(String userId, String email, String phone, String address) {
+    private void saveUserToFirestore(String userId, String fullName, String email, String phone, String address) {
         Map<String, Object> userData = new HashMap<>();
         userData.put("uid", userId);
         userData.put("email", email);
+        userData.put("fullName", fullName);
+        userData.put("firstName", extractFirstName(fullName));
         userData.put("phone", phone);
         userData.put("address", address);
+        userData.put("shareLocation", true);
+        userData.put("hideProfile", false);
+        userData.put("analyticsEnabled", true);
+        userData.put("appLockEnabled", false);
         userData.put("role", "user");
         userData.put("phoneVerified", false);
         userData.put("createdAt", System.currentTimeMillis());
@@ -211,12 +296,15 @@ public class RegisterActivity extends AppCompatActivity {
                     public void onSuccess(Void aVoid) {
                         // Successfully saved to Firestore
                         Toast.makeText(RegisterActivity.this, "Registration successful!", Toast.LENGTH_SHORT).show();
+                        AddressGeocoder.updateLatLng(RegisterActivity.this, "users", userId, address);
 
                         // Proceed to OTP verification
                         Intent intent = new Intent(RegisterActivity.this, OtpActivity.class);
                         intent.putExtra("phone", phone);
                         intent.putExtra("role", "user");
                         intent.putExtra("email", email);
+                        intent.putExtra("fullName", fullName);
+                        intent.putExtra("address", address);
                         startActivity(intent);
                         finish();
                     }
@@ -236,10 +324,39 @@ public class RegisterActivity extends AppCompatActivity {
                         intent.putExtra("phone", phone);
                         intent.putExtra("role", "user");
                         intent.putExtra("email", email);
+                        intent.putExtra("fullName", fullName);
+                        intent.putExtra("address", address);
+                        AddressGeocoder.updateLatLng(RegisterActivity.this, "users", userId, address);
                         startActivity(intent);
                         finish();
                     }
                 });
+    }
+
+    private void completeOauthProfile(FirebaseUser user,
+                                      String fullName,
+                                      String email,
+                                      String phone,
+                                      String address,
+                                      String password) {
+        Intent intent = new Intent(RegisterActivity.this, OtpActivity.class);
+        intent.putExtra("phone", phone);
+        intent.putExtra("role", "user");
+        intent.putExtra("email", email);
+        intent.putExtra("password", password);
+        intent.putExtra("fullName", fullName);
+        intent.putExtra("address", address);
+        intent.putExtra("oauth", true);
+        startActivity(intent);
+        finish();
+    }
+
+    private String extractFirstName(String fullName) {
+        if (TextUtils.isEmpty(fullName)) {
+            return "";
+        }
+        String[] parts = fullName.trim().split("\\s+");
+        return parts.length > 0 ? parts[0] : fullName;
     }
 
     private boolean isStrongPassword(String password) {
@@ -254,6 +371,52 @@ public class RegisterActivity extends AppCompatActivity {
             }
         }
         return password.length() >= 8 && hasLetter && hasDigit;
+    }
+
+    private void setupPasswordWatchers() {
+        android.text.TextWatcher watcher = new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) { }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                updatePasswordStatus();
+            }
+        };
+        if (edtPassword != null) {
+            edtPassword.addTextChangedListener(watcher);
+        }
+        if (edtConfirmPassword != null) {
+            edtConfirmPassword.addTextChangedListener(watcher);
+        }
+        updatePasswordStatus();
+    }
+
+    private void updatePasswordStatus() {
+        String password = edtPassword != null ? edtPassword.getText().toString() : "";
+        String confirm = edtConfirmPassword != null ? edtConfirmPassword.getText().toString() : "";
+        boolean hasLength = password.length() >= 8;
+        boolean hasLetter = password.matches(".*[A-Za-z].*");
+        boolean hasNumber = password.matches(".*\\d.*");
+        boolean match = !TextUtils.isEmpty(confirm) && password.equals(confirm);
+
+        setRuleColor(tvPasswordRuleLength, hasLength);
+        setRuleColor(tvPasswordRuleLetter, hasLetter);
+        setRuleColor(tvPasswordRuleNumber, hasNumber);
+        if (tvPasswordRuleMatch != null) {
+            tvPasswordRuleMatch.setText(match ? "• Passwords match" : "• Passwords do not match");
+            setRuleColor(tvPasswordRuleMatch, match);
+        }
+    }
+
+    private void setRuleColor(android.widget.TextView view, boolean ok) {
+        if (view == null) {
+            return;
+        }
+        view.setTextColor(ok ? Color.parseColor("#1B9C85") : Color.parseColor("#F44336"));
     }
 
     private String buildPhoneNumber() {
@@ -385,37 +548,8 @@ public class RegisterActivity extends AppCompatActivity {
             firstName = parts.length > 0 ? parts[0] : displayName;
         }
 
-        Map<String, Object> userData = new HashMap<>();
-        userData.put("uid", user.getUid());
-        userData.put("email", !TextUtils.isEmpty(email) ? email : "");
-        userData.put("fullName", !TextUtils.isEmpty(displayName) ? displayName : "");
-        userData.put("firstName", !TextUtils.isEmpty(firstName) ? firstName : "");
-        userData.put("role", "user");
-        userData.put("phoneVerified", false);
-        userData.put("createdAt", System.currentTimeMillis());
-        userData.put("authProvider", "google.com");
-        userData.put("phone", "");
-        userData.put("address", "");
-        maybePutPhotoUrl(userData, user);
-
         saveLastOAuthEmail(email);
-
-        db.collection("users")
-                .document(user.getUid())
-                .set(userData, SetOptions.merge())
-                .addOnSuccessListener(unused -> {
-                    Toast.makeText(this, "Signed in with Google!", Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(this, OtpActivity.class);
-                    intent.putExtra("role", "user");
-                    intent.putExtra("oauth", true);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Google profile save failed", e);
-                    Toast.makeText(this, "Signed in, but profile save failed: " + e.getMessage(),
-                            Toast.LENGTH_LONG).show();
-                });
+        prefillOauthProfile(displayName, email);
     }
 
     private void startOAuthProviderSignIn(String providerId) {
@@ -462,38 +596,34 @@ public class RegisterActivity extends AppCompatActivity {
         String email = user.getEmail();
         String displayName = user.getDisplayName();
 
-        Map<String, Object> userData = new HashMap<>();
-        userData.put("uid", user.getUid());
-        userData.put("email", !TextUtils.isEmpty(email) ? email : "");
-        userData.put("fullName", !TextUtils.isEmpty(displayName) ? displayName : "");
-        String[] parts = !TextUtils.isEmpty(displayName) ? displayName.trim().split("\\s+") : new String[0];
-        userData.put("firstName", parts.length > 0 ? parts[0] : "");
-        userData.put("role", "user");
-        userData.put("phoneVerified", false);
-        userData.put("createdAt", System.currentTimeMillis());
-        userData.put("authProvider", providerId);
-        userData.put("phone", "");
-        userData.put("address", "");
-        maybePutPhotoUrl(userData, user);
-
         saveLastOAuthEmail(email);
+        attemptExistingOauthLogin(user, displayName, email);
+    }
 
+    private void attemptExistingOauthLogin(FirebaseUser user, String displayName, String email) {
+        if (user == null) {
+            prefillOauthProfile(displayName, email);
+            return;
+        }
         db.collection("users")
                 .document(user.getUid())
-                .set(userData, SetOptions.merge())
-                .addOnSuccessListener(unused -> {
-                    Toast.makeText(this, "Signed in!", Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(this, OtpActivity.class);
-                    intent.putExtra("role", "user");
-                    intent.putExtra("oauth", true);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        Boolean phoneVerified = doc.getBoolean("phoneVerified");
+                        boolean verified = phoneVerified != null && phoneVerified;
+                        if (verified) {
+                            SessionManager.saveRole(this, "user");
+                            Intent intent = new Intent(this, MainTabsActivity.class);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                            finish();
+                            return;
+                        }
+                    }
+                    prefillOauthProfile(displayName, email);
                 })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "OAuth profile save failed: " + providerId, e);
-                    Toast.makeText(this, "Signed in, but profile save failed: " + e.getMessage(),
-                            Toast.LENGTH_LONG).show();
-                });
+                .addOnFailureListener(e -> prefillOauthProfile(displayName, email));
     }
 
     private void saveLastOAuthEmail(String email) {
@@ -513,4 +643,59 @@ public class RegisterActivity extends AppCompatActivity {
             userData.put("photoUrl", photoUrl);
         }
     }
+
+    private void prefillOauthProfile(String displayName, String email) {
+        isOauthFlow = true;
+        if (edtFullName != null && !TextUtils.isEmpty(displayName)) {
+            edtFullName.setText(displayName);
+        }
+        if (edtEmail != null && !TextUtils.isEmpty(email)) {
+            edtEmail.setText(email);
+            edtEmail.setEnabled(false);
+        }
+        Toast.makeText(this, "Please complete your profile details.", Toast.LENGTH_LONG).show();
+    }
+
+    private void prefillFromOtp(Intent intent) {
+        if (intent == null) {
+            return;
+        }
+        boolean fromOtp = intent.getBooleanExtra("fromOtp", false);
+        if (!fromOtp) {
+            return;
+        }
+        String fullName = intent.getStringExtra("fullName");
+        String email = intent.getStringExtra("email");
+        String phone = intent.getStringExtra("phone");
+        String address = intent.getStringExtra("address");
+        if (!TextUtils.isEmpty(fullName) && edtFullName != null) {
+            edtFullName.setText(fullName);
+        }
+        if (!TextUtils.isEmpty(email) && edtEmail != null) {
+            edtEmail.setEnabled(true);
+            edtEmail.setText(email);
+        }
+        if (!TextUtils.isEmpty(address) && edtAddress != null) {
+            edtAddress.setText(address);
+        }
+        if (!TextUtils.isEmpty(phone) && edtPhone != null) {
+            edtPhone.setText(formatLocalPhone(stripCountryCode(phone)));
+        }
+    }
+
+    private String stripCountryCode(String phone) {
+        if (TextUtils.isEmpty(phone)) {
+            return "";
+        }
+        String digits = phone.replaceAll("\\D", "");
+        if (digits.startsWith("63") && digits.length() > 2) {
+            digits = digits.substring(2);
+        }
+        if (digits.startsWith("0") && digits.length() > 1) {
+            digits = digits.substring(1);
+        }
+        return digits;
+    }
+
+    
 }

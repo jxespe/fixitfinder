@@ -1,9 +1,8 @@
 package com.example.fixitfinderapp;
 
 import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
 
-public class ServiceListActivity extends AppCompatActivity {
+public class ServiceListActivity extends BaseSwipeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

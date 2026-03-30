@@ -12,42 +12,37 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Toast;
-import android.util.Log;
-import androidx.appcompat.app.AppCompatActivity;
+import android.graphics.Color;
+import com.example.fixitfinderapp.BaseSwipeActivity;
 
 import com.example.fixitfinderapp.R;
-import com.google.firebase.auth.AuthResult;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
+public class ProviderRegisterActivity extends BaseSwipeActivity {
 
-import java.util.Locale;
-import java.util.HashMap;
-import java.util.Map;
-
-public class ProviderRegisterActivity extends AppCompatActivity {
-
-    private static final String TAG = "ProviderRegisterActivity";
-    private FirebaseAuth auth;
-    private FirebaseFirestore db;
     private boolean isPasswordVisible = false;
     private Spinner spinnerServiceCategory;
     private Spinner spinnerCountryCode;
     private boolean isFormattingPhone = false;
+    private EditText edtConfirmPassword;
+    private android.widget.TextView tvPasswordRuleLength;
+    private android.widget.TextView tvPasswordRuleLetter;
+    private android.widget.TextView tvPasswordRuleNumber;
+    private android.widget.TextView tvPasswordRuleMatch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_provider_register);
 
-        auth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
-
         EditText edtFullName = findViewById(R.id.edtFullName);
         EditText edtEmail = findViewById(R.id.edtEmail);
         EditText edtPhone = findViewById(R.id.edtPhone);
         EditText edtAddress = findViewById(R.id.edtAddress);
         EditText edtPassword = findViewById(R.id.edtPassword);
+        edtConfirmPassword = findViewById(R.id.edtConfirmPassword);
+        tvPasswordRuleLength = findViewById(R.id.tvPasswordRuleLength);
+        tvPasswordRuleLetter = findViewById(R.id.tvPasswordRuleLetter);
+        tvPasswordRuleNumber = findViewById(R.id.tvPasswordRuleNumber);
+        tvPasswordRuleMatch = findViewById(R.id.tvPasswordRuleMatch);
         spinnerServiceCategory = findViewById(R.id.spinnerServiceCategory);
         spinnerCountryCode = findViewById(R.id.spinnerCountryCode);
         Button btnRegister = findViewById(R.id.btnRegister);
@@ -56,6 +51,7 @@ public class ProviderRegisterActivity extends AppCompatActivity {
 
         btnBack.setOnClickListener(v -> finish());
         setupPhoneFormatting(edtPhone);
+        setupPasswordWatchers(edtPassword);
 
         if (btnPasswordToggle != null) {
             btnPasswordToggle.setOnClickListener(v -> {
@@ -78,6 +74,9 @@ public class ProviderRegisterActivity extends AppCompatActivity {
             String phone = buildPhoneNumber(edtPhone);
             String address = edtAddress.getText().toString().trim();
             String password = edtPassword.getText().toString().trim();
+            String confirmPassword = edtConfirmPassword != null
+                    ? edtConfirmPassword.getText().toString().trim()
+                    : "";
             String category = getSelectedCategory();
 
             if (TextUtils.isEmpty(fullName)) {
@@ -110,6 +109,22 @@ public class ProviderRegisterActivity extends AppCompatActivity {
                 return;
             }
 
+            if (TextUtils.isEmpty(confirmPassword)) {
+                if (edtConfirmPassword != null) {
+                    edtConfirmPassword.setError("Please confirm your password");
+                    edtConfirmPassword.requestFocus();
+                }
+                return;
+            }
+
+            if (!password.equals(confirmPassword)) {
+                if (edtConfirmPassword != null) {
+                    edtConfirmPassword.setError("Passwords do not match");
+                    edtConfirmPassword.requestFocus();
+                }
+                return;
+            }
+
             if (TextUtils.isEmpty(phone)) {
                 edtPhone.setError("Phone number is required");
                 edtPhone.requestFocus();
@@ -130,74 +145,17 @@ public class ProviderRegisterActivity extends AppCompatActivity {
             btnRegister.setEnabled(false);
             btnRegister.setText("Submitting...");
 
-            auth.createUserWithEmailAndPassword(email, password)
-                    .addOnCompleteListener(this, task -> {
-                        if (task.isSuccessful()) {
-                            FirebaseUser user = auth.getCurrentUser();
-                            if (user != null) {
-                                saveProviderToFirestore(user.getUid(), fullName, email, phone, address, category);
-                            }
-                        } else {
-                            btnRegister.setEnabled(true);
-                            btnRegister.setText("Submit");
-
-                            String errorMessage = "Registration failed";
-                            if (task.getException() != null) {
-                                errorMessage = task.getException().getMessage();
-                            }
-                            Toast.makeText(ProviderRegisterActivity.this, errorMessage, Toast.LENGTH_LONG).show();
-                        }
-                    });
+            Intent intent = new Intent(this, OtpActivity.class);
+            intent.putExtra("phone", phone);
+            intent.putExtra("role", "provider");
+            intent.putExtra("email", email);
+            intent.putExtra("password", password);
+            intent.putExtra("fullName", fullName);
+            intent.putExtra("address", address);
+            intent.putExtra("serviceCategory", category);
+            startActivity(intent);
+            finish();
         });
-    }
-
-    private void saveProviderToFirestore(String userId, String fullName, String email, String phone, String address, String category) {
-        String firstName = fullName;
-        if (!TextUtils.isEmpty(fullName)) {
-            String[] parts = fullName.trim().split("\\s+");
-            if (parts.length > 0) {
-                firstName = parts[0];
-            }
-        }
-
-        Map<String, Object> userData = new HashMap<>();
-        userData.put("uid", userId);
-        userData.put("fullName", fullName);
-        userData.put("firstName", firstName);
-        userData.put("email", email);
-        userData.put("phone", phone);
-        userData.put("address", address);
-        userData.put("serviceCategory", category);
-        userData.put("serviceCategoryLower", category.toLowerCase(Locale.US).trim());
-        userData.put("role", "provider");
-        userData.put("phoneVerified", false);
-        userData.put("createdAt", System.currentTimeMillis());
-
-        db.collection("providers")
-                .document(userId)
-                .set(userData)
-                .addOnSuccessListener(unused -> {
-                    Toast.makeText(this, "Registration successful!", Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(this, OtpActivity.class);
-                    intent.putExtra("phone", phone);
-                    intent.putExtra("role", "provider");
-                    intent.putExtra("email", email);
-                    intent.putExtra("serviceCategory", category);
-                    startActivity(intent);
-                    finish();
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to save provider profile", e);
-                    Toast.makeText(this, "Account created but failed to save profile: " + e.getMessage(),
-                            Toast.LENGTH_LONG).show();
-                    Intent intent = new Intent(this, OtpActivity.class);
-                    intent.putExtra("phone", phone);
-                    intent.putExtra("role", "provider");
-                    intent.putExtra("email", email);
-                    intent.putExtra("serviceCategory", category);
-                    startActivity(intent);
-                    finish();
-                });
     }
 
     private boolean isStrongPassword(String password) {
@@ -212,6 +170,52 @@ public class ProviderRegisterActivity extends AppCompatActivity {
             }
         }
         return password.length() >= 8 && hasLetter && hasDigit;
+    }
+
+    private void setupPasswordWatchers(EditText edtPassword) {
+        android.text.TextWatcher watcher = new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) { }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                updatePasswordStatus(edtPassword);
+            }
+        };
+        if (edtPassword != null) {
+            edtPassword.addTextChangedListener(watcher);
+        }
+        if (edtConfirmPassword != null) {
+            edtConfirmPassword.addTextChangedListener(watcher);
+        }
+        updatePasswordStatus(edtPassword);
+    }
+
+    private void updatePasswordStatus(EditText edtPassword) {
+        String password = edtPassword != null ? edtPassword.getText().toString() : "";
+        String confirm = edtConfirmPassword != null ? edtConfirmPassword.getText().toString() : "";
+        boolean hasLength = password.length() >= 8;
+        boolean hasLetter = password.matches(".*[A-Za-z].*");
+        boolean hasNumber = password.matches(".*\\d.*");
+        boolean match = !TextUtils.isEmpty(confirm) && password.equals(confirm);
+
+        setRuleColor(tvPasswordRuleLength, hasLength);
+        setRuleColor(tvPasswordRuleLetter, hasLetter);
+        setRuleColor(tvPasswordRuleNumber, hasNumber);
+        if (tvPasswordRuleMatch != null) {
+            tvPasswordRuleMatch.setText(match ? "• Passwords match" : "• Passwords do not match");
+            setRuleColor(tvPasswordRuleMatch, match);
+        }
+    }
+
+    private void setRuleColor(android.widget.TextView view, boolean ok) {
+        if (view == null) {
+            return;
+        }
+        view.setTextColor(ok ? Color.parseColor("#1B9C85") : Color.parseColor("#F44336"));
     }
 
     private String getSelectedCategory() {

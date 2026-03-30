@@ -9,10 +9,6 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.util.Log;
-
-import androidx.appcompat.app.AppCompatActivity;
-
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -22,6 +18,7 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -32,7 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-public class BookingScheduleActivity extends AppCompatActivity {
+public class BookingScheduleActivity extends BaseSwipeActivity {
 
     private static final String TAG = "BookingSchedule";
     private static final int START_HOUR = 5;
@@ -56,6 +53,8 @@ public class BookingScheduleActivity extends AppCompatActivity {
     private String serviceDescription;
     private String selectedDateKey;
     private String selectedTime;
+    private boolean isReschedule = false;
+    private String rescheduleBookingId;
     private final Set<String> bookedTimes = new HashSet<>();
     private final Map<String, TextView> slotButtons = new HashMap<>();
 
@@ -74,6 +73,9 @@ public class BookingScheduleActivity extends AppCompatActivity {
         servicePrice = getIntent().getDoubleExtra("servicePrice", 0d);
         serviceImageUri = getIntent().getStringExtra("serviceImageUri");
         serviceDescription = getIntent().getStringExtra("serviceDescription");
+        rescheduleBookingId = getIntent().getStringExtra("bookingId");
+        isReschedule = getIntent().getBooleanExtra("reschedule", false)
+                && !TextUtils.isEmpty(rescheduleBookingId);
 
         ImageButton btnBack = findViewById(R.id.btnBack);
         calendarView = findViewById(R.id.calendarView);
@@ -86,15 +88,21 @@ public class BookingScheduleActivity extends AppCompatActivity {
 
         btnBack.setOnClickListener(v -> finish());
         btnConfirm.setOnClickListener(v -> submitBooking());
+        if (isReschedule) {
+            btnConfirm.setText(R.string.confirm_booking_reschedule);
+        }
         if (btnBackToServices != null) {
             btnBackToServices.setOnClickListener(v -> finish());
         }
-
         Calendar today = Calendar.getInstance();
         calendarView.setMinDate(today.getTimeInMillis());
         selectedDateKey = formatDateKey(today);
         updateSelectedDateLabel(today);
-        loadBookedSlots();
+        if (isReschedule) {
+            loadRescheduleBooking();
+        } else {
+            loadBookedSlots();
+        }
 
         calendarView.setOnDateChangeListener((view, year, month, dayOfMonth) -> {
             Calendar selected = Calendar.getInstance();
@@ -129,6 +137,10 @@ public class BookingScheduleActivity extends AppCompatActivity {
         query.get()
                 .addOnSuccessListener(snapshot -> {
                     snapshot.getDocuments().forEach(doc -> {
+                        if (isReschedule && rescheduleBookingId != null
+                                && rescheduleBookingId.equals(doc.getId())) {
+                            return;
+                        }
                         String timeSlot = normalizeSlot(doc.getString("timeSlot"));
                         if (TextUtils.isEmpty(timeSlot)) {
                             Long slotKey = doc.getLong("timeSlotKey");
@@ -274,6 +286,38 @@ public class BookingScheduleActivity extends AppCompatActivity {
                 calendar.get(Calendar.DAY_OF_MONTH));
     }
 
+    private void loadRescheduleBooking() {
+        if (TextUtils.isEmpty(rescheduleBookingId)) {
+            loadBookedSlots();
+            return;
+        }
+        FirebaseFirestore.getInstance()
+                .collection("bookings")
+                .document(rescheduleBookingId)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    String dateKey = doc.getString("dateKey");
+                    String timeSlot = doc.getString("timeSlot");
+                    Timestamp scheduledAt = doc.getTimestamp("scheduledAt");
+                    if (scheduledAt != null) {
+                        Calendar cal = Calendar.getInstance();
+                        cal.setTime(scheduledAt.toDate());
+                        selectedDateKey = formatDateKey(cal);
+                        updateSelectedDateLabel(cal);
+                        if (calendarView != null) {
+                            calendarView.setDate(cal.getTimeInMillis(), false, true);
+                        }
+                    } else if (!TextUtils.isEmpty(dateKey)) {
+                        selectedDateKey = dateKey;
+                    }
+                    if (!TextUtils.isEmpty(timeSlot)) {
+                        selectedTime = normalizeSlot(timeSlot);
+                    }
+                    loadBookedSlots();
+                })
+                .addOnFailureListener(e -> loadBookedSlots());
+    }
+
     private void submitBooking() {
         if (TextUtils.isEmpty(selectedTime)) {
             Toast.makeText(this, "Please select a time slot.", Toast.LENGTH_SHORT).show();
@@ -284,6 +328,19 @@ public class BookingScheduleActivity extends AppCompatActivity {
             Toast.makeText(this, "Please log in again.", Toast.LENGTH_SHORT).show();
             return;
         }
+        // Ensure the latest FCM token is stored for push delivery.
+        FirebaseMessaging.getInstance().getToken()
+                .addOnSuccessListener(token -> {
+                    if (TextUtils.isEmpty(token)) {
+                        return;
+                    }
+                    java.util.Map<String, Object> tokenUpdate = new java.util.HashMap<>();
+                    tokenUpdate.put("fcmToken", token);
+                    FirebaseFirestore.getInstance()
+                            .collection("users")
+                            .document(user.getUid())
+                            .set(tokenUpdate, SetOptions.merge());
+                });
 
         Calendar scheduled = Calendar.getInstance();
         String[] parts = selectedDateKey.split("-");
@@ -301,7 +358,13 @@ public class BookingScheduleActivity extends AppCompatActivity {
 
         btnConfirm.setEnabled(false);
         btnConfirm.setText("Checking...");
-        checkExistingBooking(hour, normalizedSlot, () -> {
+        checkExistingBooking(hour, normalizedSlot, rescheduleBookingId, () -> {
+            if (!isReschedule) {
+                btnConfirm.setEnabled(true);
+                btnConfirm.setText(R.string.continue_to_payment);
+                openTransactionDetails(scheduled.getTimeInMillis(), normalizedSlot, hour);
+                return;
+            }
             Map<String, Object> booking = new HashMap<>();
             booking.put("userId", user.getUid());
             booking.put("bookedBy", !TextUtils.isEmpty(user.getEmail())
@@ -334,36 +397,150 @@ public class BookingScheduleActivity extends AppCompatActivity {
             booking.put("timeSlotKey", hour);
             booking.put("scheduledAt", new Timestamp(scheduled.getTime()));
             booking.put("createdAt", System.currentTimeMillis());
-            booking.put("bookingNumber", createBookingNumber());
-
-            btnConfirm.setText("Booking...");
+            booking.put("bookingNumber", BookingCompletionHelper.createBookingNumber(selectedDateKey));
             FirebaseFirestore.getInstance()
-                    .collection("bookings")
-                    .add(booking)
+                    .collection("users")
+                    .document(user.getUid())
+                    .get()
                     .addOnSuccessListener(doc -> {
-                        createConversationAndSeedMessage(doc.getId(), user, normalizedSlot);
-                        Intent intent = new Intent(this, BookingConfirmationActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        startActivity(intent);
+                        mergeUserProfileIntoBooking(booking, doc, user);
+                        submitRescheduleRecord(booking);
                     })
-                    .addOnFailureListener(e -> {
-                        btnConfirm.setEnabled(true);
-                        btnConfirm.setText("Confirm Booking");
-                        if (e instanceof FirebaseFirestoreException
-                                && ((FirebaseFirestoreException) e).getCode()
-                                == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
-                            Toast.makeText(this,
-                                    "Permission denied. Check Firestore rules for bookings.",
-                                    Toast.LENGTH_LONG).show();
-                            return;
-                        }
-                        Toast.makeText(this, "Failed to book: " + e.getMessage(),
-                                Toast.LENGTH_LONG).show();
-                    });
+                    .addOnFailureListener(e -> mergeUserProfileIntoBooking(booking, null, user));
         });
     }
 
-    private void checkExistingBooking(int hour, String normalizedSlot, Runnable onAvailable) {
+    private void mergeUserProfileIntoBooking(Map<String, Object> booking,
+                                             com.google.firebase.firestore.DocumentSnapshot doc,
+                                             FirebaseUser user) {
+        if (doc != null) {
+            String fullName = doc.getString("fullName");
+            String firstName = doc.getString("firstName");
+            if (TextUtils.isEmpty(firstName) && !TextUtils.isEmpty(fullName)) {
+                String[] nameParts = fullName.trim().split("\\s+");
+                if (nameParts.length > 0) {
+                    firstName = nameParts[0];
+                }
+            }
+            if (!TextUtils.isEmpty(fullName)) {
+                booking.put("userName", fullName);
+            }
+            if (!TextUtils.isEmpty(firstName)) {
+                booking.put("userFirstName", firstName);
+            }
+            String userAddress = doc.getString("address");
+            if (!TextUtils.isEmpty(userAddress)) {
+                booking.put("userAddress", userAddress);
+            }
+            Double lat = doc.getDouble("lat");
+            Double lng = doc.getDouble("lng");
+            if (lat != null && lng != null) {
+                booking.put("userLat", lat);
+                booking.put("userLng", lng);
+            }
+        }
+        submitRescheduleRecord(booking);
+    }
+
+    private void openTransactionDetails(long scheduledAtMillis,
+                                        String normalizedSlot,
+                                        int hour) {
+        Intent intent = new Intent(this, TransactionDetailsActivity.class);
+        intent.putExtra(TransactionDetailsActivity.EXTRA_SCHEDULED_AT_MILLIS, scheduledAtMillis);
+        intent.putExtra(TransactionDetailsActivity.EXTRA_NORMALIZED_SLOT, normalizedSlot);
+        intent.putExtra(TransactionDetailsActivity.EXTRA_TIME_SLOT_KEY, hour);
+        intent.putExtra(TransactionDetailsActivity.EXTRA_PROVIDER_ID, providerId);
+        intent.putExtra(TransactionDetailsActivity.EXTRA_PROVIDER_NAME, providerName);
+        intent.putExtra(TransactionDetailsActivity.EXTRA_LOGO_URI, logoUri);
+        intent.putExtra(TransactionDetailsActivity.EXTRA_SERVICE_CATEGORY, serviceCategory);
+        intent.putExtra(TransactionDetailsActivity.EXTRA_PROVIDER_ADDRESS, providerAddress);
+        intent.putExtra(TransactionDetailsActivity.EXTRA_SERVICE_ID, serviceId);
+        intent.putExtra(TransactionDetailsActivity.EXTRA_SERVICE_NAME, serviceName);
+        intent.putExtra(TransactionDetailsActivity.EXTRA_SERVICE_DESCRIPTION, serviceDescription);
+        intent.putExtra(TransactionDetailsActivity.EXTRA_SERVICE_PRICE, servicePrice);
+        intent.putExtra(TransactionDetailsActivity.EXTRA_SERVICE_IMAGE_URI, serviceImageUri);
+        intent.putExtra(TransactionDetailsActivity.EXTRA_DATE_KEY, selectedDateKey);
+        startActivity(intent);
+    }
+
+    private void submitRescheduleRecord(Map<String, Object> booking) {
+        if (TextUtils.isEmpty(rescheduleBookingId)) {
+            return;
+        }
+        btnConfirm.setText("Rescheduling...");
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("dateKey", booking.get("dateKey"));
+        updates.put("timeSlot", booking.get("timeSlot"));
+        updates.put("timeSlotKey", booking.get("timeSlotKey"));
+        updates.put("scheduledAt", booking.get("scheduledAt"));
+        updates.put("status", "rescheduled");
+        updates.put("rescheduledAt", FieldValue.serverTimestamp());
+        updates.put("rescheduledBy", "provider");
+        FirebaseFirestore.getInstance()
+                .collection("bookings")
+                .document(rescheduleBookingId)
+                .update(updates)
+                .addOnSuccessListener(unused -> {
+                    sendRescheduleMessage();
+                    Toast.makeText(this, "Booking rescheduled.", Toast.LENGTH_SHORT).show();
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    btnConfirm.setEnabled(true);
+                    btnConfirm.setText(R.string.confirm_booking_reschedule);
+                    Toast.makeText(this, "Failed to reschedule: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                });
+    }
+
+    private void sendRescheduleMessage() {
+        if (TextUtils.isEmpty(rescheduleBookingId)) {
+            return;
+        }
+        String dateLabel = selectedDateKey + " " + valueOrEmpty(selectedTime);
+        String messageText = "Booking rescheduled to " + dateLabel + ". Tap to review.";
+        final String role = TextUtils.isEmpty(SessionManager.getRole(this))
+                ? "provider"
+                : SessionManager.getRole(this);
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        Map<String, Object> message = new HashMap<>();
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        message.put("senderId", user != null ? user.getUid() : "");
+        message.put("senderRole", role);
+        message.put("type", "system_reschedule");
+        message.put("bookingId", rescheduleBookingId);
+        message.put("text", messageText);
+        message.put("createdAt", FieldValue.serverTimestamp());
+
+        db.collection("conversations")
+                .document(rescheduleBookingId)
+                .collection("messages")
+                .add(message)
+                .addOnSuccessListener(ref -> {
+                    Map<String, Object> convoUpdates = new HashMap<>();
+                    convoUpdates.put("lastMessage", "Booking rescheduled.");
+                    convoUpdates.put("lastMessageAt", FieldValue.serverTimestamp());
+                    if ("provider".equalsIgnoreCase(role)) {
+                        convoUpdates.put("unreadUserCount", FieldValue.increment(1));
+                        convoUpdates.put("unreadProviderCount", 0);
+                    } else {
+                        convoUpdates.put("unreadProviderCount", FieldValue.increment(1));
+                        convoUpdates.put("unreadUserCount", 0);
+                    }
+                    db.collection("conversations")
+                            .document(rescheduleBookingId)
+                            .update(convoUpdates);
+                });
+    }
+
+    private String valueOrEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    private void checkExistingBooking(int hour,
+                                      String normalizedSlot,
+                                      String excludeBookingId,
+                                      Runnable onAvailable) {
         Query baseQuery = FirebaseFirestore.getInstance()
                 .collection("bookings")
                 .whereEqualTo("providerId", providerId)
@@ -372,14 +549,14 @@ public class BookingScheduleActivity extends AppCompatActivity {
         baseQuery.whereEqualTo("timeSlotKey", hour)
                 .get()
                 .addOnSuccessListener(snapshot -> {
-                    if (!snapshot.isEmpty()) {
+                    if (hasOtherBooking(snapshot.getDocuments(), excludeBookingId)) {
                         handleSlotAlreadyBooked();
                         return;
                     }
                     baseQuery.whereEqualTo("timeSlot", normalizedSlot)
                             .get()
                             .addOnSuccessListener(fallback -> {
-                                if (!fallback.isEmpty()) {
+                                if (hasOtherBooking(fallback.getDocuments(), excludeBookingId)) {
                                     handleSlotAlreadyBooked();
                                     return;
                                 }
@@ -390,17 +567,33 @@ public class BookingScheduleActivity extends AppCompatActivity {
                 .addOnFailureListener(this::handleAvailabilityCheckError);
     }
 
+    private boolean hasOtherBooking(List<com.google.firebase.firestore.DocumentSnapshot> docs,
+                                    String excludeBookingId) {
+        if (docs == null || docs.isEmpty()) {
+            return false;
+        }
+        for (com.google.firebase.firestore.DocumentSnapshot doc : docs) {
+            if (excludeBookingId != null && excludeBookingId.equals(doc.getId())) {
+                continue;
+            }
+            return true;
+        }
+        return false;
+    }
+
     private void handleSlotAlreadyBooked() {
         Toast.makeText(this, "This time slot is already booked.",
                 Toast.LENGTH_LONG).show();
         btnConfirm.setEnabled(true);
-        btnConfirm.setText("Confirm Booking");
+        btnConfirm.setText(isReschedule ? R.string.confirm_booking_reschedule
+                : R.string.continue_to_payment);
         loadBookedSlots();
     }
 
     private void handleAvailabilityCheckError(Exception e) {
         btnConfirm.setEnabled(true);
-        btnConfirm.setText("Confirm Booking");
+        btnConfirm.setText(isReschedule ? R.string.confirm_booking_reschedule
+                : R.string.continue_to_payment);
         Toast.makeText(this, "Failed to check availability: " + e.getMessage(),
                 Toast.LENGTH_LONG).show();
     }
@@ -440,94 +633,4 @@ public class BookingScheduleActivity extends AppCompatActivity {
         return now.after(slotTime);
     }
 
-    private void createConversationAndSeedMessage(String bookingId, FirebaseUser user, String slot) {
-        if (TextUtils.isEmpty(bookingId) || user == null) {
-            Log.w(TAG, "Skip conversation: bookingId or user missing");
-            return;
-        }
-        Log.d(TAG, "Creating conversation for bookingId=" + bookingId
-                + " providerId=" + providerId + " userId=" + user.getUid());
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        String fallbackName = !TextUtils.isEmpty(user.getEmail()) ? user.getEmail() : user.getUid();
-        db.collection("users")
-                .document(user.getUid())
-                .get()
-                .addOnSuccessListener(doc -> {
-                    String userName = doc.getString("fullName");
-                    if (TextUtils.isEmpty(userName)) {
-                        userName = doc.getString("firstName");
-                    }
-                    if (TextUtils.isEmpty(userName)) {
-                        userName = fallbackName;
-                    }
-                    String userLogoUri = doc.getString("photoUrl");
-                    if (TextUtils.isEmpty(userLogoUri)) {
-                        userLogoUri = doc.getString("profilePhotoUri");
-                    }
-                    if (TextUtils.isEmpty(userLogoUri) && user.getPhotoUrl() != null) {
-                        userLogoUri = user.getPhotoUrl().toString();
-                    }
-                    writeConversation(db, bookingId, user, userName, userLogoUri, slot);
-                })
-                .addOnFailureListener(e -> {
-                    String fallbackLogo = user.getPhotoUrl() != null
-                            ? user.getPhotoUrl().toString()
-                            : null;
-                    writeConversation(db, bookingId, user, fallbackName, fallbackLogo, slot);
-                });
-    }
-
-    private void writeConversation(FirebaseFirestore db, String bookingId, FirebaseUser user,
-                                   String userName, String userLogoUri, String slot) {
-        String initialMessage = "Hi! I just booked an appointment for "
-                + selectedDateKey + " " + slot + ".";
-
-        java.util.Map<String, Object> convo = new java.util.HashMap<>();
-        convo.put("bookingId", bookingId);
-        convo.put("providerId", providerId);
-        convo.put("providerName", providerName);
-        convo.put("providerLogoUri", logoUri);
-        convo.put("userId", user.getUid());
-        convo.put("userName", userName);
-        convo.put("userLogoUri", userLogoUri);
-        convo.put("unreadUserCount", 0);
-        convo.put("unreadProviderCount", 1);
-        convo.put("createdAt", FieldValue.serverTimestamp());
-        convo.put("lastMessage", initialMessage);
-        convo.put("lastMessageAt", FieldValue.serverTimestamp());
-
-        java.util.Map<String, Object> message = new java.util.HashMap<>();
-        message.put("senderId", user.getUid());
-        message.put("senderRole", "user");
-        message.put("text", initialMessage);
-        message.put("createdAt", FieldValue.serverTimestamp());
-
-        com.google.firebase.firestore.DocumentReference convoRef =
-                db.collection("conversations").document(bookingId);
-        convoRef.set(convo, SetOptions.merge())
-                .addOnSuccessListener(unused -> {
-                    Log.d(TAG, "Conversation created for bookingId=" + bookingId);
-                    convoRef.collection("messages").document().set(message)
-                            .addOnSuccessListener(msg ->
-                                    Log.d(TAG, "Seed message created for bookingId=" + bookingId))
-                            .addOnFailureListener(e -> {
-                                Log.e(TAG, "Failed to create seed message", e);
-                                Toast.makeText(this,
-                                        "Booked, but initial chat message failed. Check Firestore rules.",
-                                        Toast.LENGTH_LONG).show();
-                            });
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to create conversation", e);
-                    Toast.makeText(this,
-                            "Booked, but chat thread was not created. Check Firestore rules.",
-                            Toast.LENGTH_LONG).show();
-                });
-    }
-
-    private String createBookingNumber() {
-        String datePart = selectedDateKey != null ? selectedDateKey.replace("-", "") : "00000000";
-        long suffix = System.currentTimeMillis() % 10000;
-        return String.format(Locale.US, "%s%04d", datePart, suffix);
-    }
 }

@@ -6,7 +6,6 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -26,7 +25,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class ProviderEarningsListActivity extends AppCompatActivity {
+public class ProviderEarningsListActivity extends BaseSwipeActivity {
 
     private final List<ProviderEarningItem> items = new ArrayList<>();
     private ProviderEarningsAdapter adapter;

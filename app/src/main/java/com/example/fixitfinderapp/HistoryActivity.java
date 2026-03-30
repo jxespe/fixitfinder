@@ -1,25 +1,28 @@
 package com.example.fixitfinderapp;
 
-import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.fixitfinderapp.adapters.BookingHistoryAdapter;
+import com.example.fixitfinderapp.adapters.UserReviewAdapter;
 import com.example.fixitfinderapp.models.BookingHistoryItem;
-import com.google.android.material.chip.Chip;
-import com.google.android.material.chip.ChipGroup;
+import com.example.fixitfinderapp.models.UserReviewItem;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import androidx.core.content.ContextCompat;
+
+import com.google.android.material.button.MaterialButton;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -27,12 +30,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class HistoryActivity extends AppCompatActivity {
+public class HistoryActivity extends BaseSwipeActivity {
 
-    private final List<BookingHistoryItem> items = new ArrayList<>();
-    private BookingHistoryAdapter adapter;
+    private final List<BookingHistoryItem> historyItems = new ArrayList<>();
+    private final List<UserReviewItem> reviewItems = new ArrayList<>();
+    private BookingHistoryAdapter historyAdapter;
+    private UserReviewAdapter reviewAdapter;
     private TextView tvEmpty;
+    private RecyclerView recycler;
     private FirebaseUser user;
+    private boolean showingHistory = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,53 +52,87 @@ public class HistoryActivity extends AppCompatActivity {
         TextView tvHeaderTitle = findViewById(R.id.tvHeaderTitle);
         tvHeaderTitle.setText("Booking History");
 
-        RecyclerView recycler = findViewById(R.id.recyclerViewHistory);
+        MaterialButton btnTabHistory = findViewById(R.id.btnTabHistory);
+        MaterialButton btnTabReview = findViewById(R.id.btnTabReview);
+        applyHistoryReviewTabStyle(true);
+        if (btnTabHistory != null) {
+            btnTabHistory.setOnClickListener(v -> {
+                if (!showingHistory) {
+                    applyHistoryReviewTabStyle(true);
+                    showHistoryTab();
+                }
+            });
+        }
+        if (btnTabReview != null) {
+            btnTabReview.setOnClickListener(v -> {
+                if (showingHistory) {
+                    applyHistoryReviewTabStyle(false);
+                    showReviewTab();
+                }
+            });
+        }
+
+        recycler = findViewById(R.id.recyclerViewHistory);
         tvEmpty = findViewById(R.id.tvEmptyHistory);
-        adapter = new BookingHistoryAdapter(items);
+        historyAdapter = new BookingHistoryAdapter(historyItems);
+        reviewAdapter = new UserReviewAdapter(reviewItems);
         recycler.setLayoutManager(new LinearLayoutManager(this));
-        recycler.setAdapter(adapter);
+        recycler.setAdapter(historyAdapter);
 
-        ChipGroup chipGroup = findViewById(R.id.chipGroupFilters);
-        chipGroup.setOnCheckedStateChangeListener((group, checkedIds) -> {
-            String filter = "all";
-            if (!checkedIds.isEmpty()) {
-                int id = checkedIds.get(0);
-                filter = readFilterTag(id);
-            }
-            loadHistory(filter);
-        });
-
-        loadHistory("all");
+        loadHistory();
 
         NavigationHelper.setupBottomNav(this, R.id.nav_history);
+    }
+
+    private void applyHistoryReviewTabStyle(boolean historySelected) {
+        MaterialButton btnHistory = findViewById(R.id.btnTabHistory);
+        MaterialButton btnReview = findViewById(R.id.btnTabReview);
+        if (btnHistory == null || btnReview == null) {
+            return;
+        }
+        int active = ContextCompat.getColor(this, R.color.color_primary);
+        int inactive = ContextCompat.getColor(this, R.color.history_tab_inactive);
+        int white = ContextCompat.getColor(this, R.color.white);
+        btnHistory.setBackgroundTintList(ColorStateList.valueOf(historySelected ? active : inactive));
+        btnReview.setBackgroundTintList(ColorStateList.valueOf(historySelected ? inactive : active));
+        btnHistory.setTextColor(white);
+        btnReview.setTextColor(white);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         NavigationHelper.ensureLoggedIn(this);
+        BottomNavigationView bottomNavigation = findViewById(R.id.bottomNavigation);
+        NavigationHelper.updateMessageBadge(this, bottomNavigation);
     }
 
-    private String readFilterTag(int chipId) {
-        Chip chip = findViewById(chipId);
-        if (chip == null || chip.getTag() == null) {
-            return "all";
-        }
-        return chip.getTag().toString();
+    private void showHistoryTab() {
+        showingHistory = true;
+        recycler.setAdapter(historyAdapter);
+        tvEmpty.setText("No bookings yet.");
+        loadHistory();
     }
 
-    private void loadHistory(String statusFilter) {
+    private void showReviewTab() {
+        showingHistory = false;
+        recycler.setAdapter(reviewAdapter);
+        tvEmpty.setText("You have not reviewed any providers yet.");
+        loadReviews();
+    }
+
+    private void loadHistory() {
         if (user == null) {
             Toast.makeText(this, "Please log in again.", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
-        Query query = FirebaseFirestore.getInstance()
+        FirebaseFirestore.getInstance()
                 .collection("bookings")
-                .whereEqualTo("userId", user.getUid());
-        query.get()
+                .whereEqualTo("userId", user.getUid())
+                .get()
                 .addOnSuccessListener(snapshot -> {
-                    items.clear();
+                    historyItems.clear();
                     snapshot.getDocuments().forEach(doc -> {
                         String bookingId = doc.getId();
                         String providerName = doc.getString("providerName");
@@ -105,15 +146,12 @@ public class HistoryActivity extends AppCompatActivity {
                                 (!TextUtils.isEmpty(serviceName) ? serviceName : "Service Booking");
 
                         String status = displayStatus(doc.getString("status"));
-                        if (!matchesFilter(doc.getString("status"), statusFilter)) {
-                            return;
-                        }
                         String payment = displayPayment(doc.getString("paymentStatus"));
                         String logoUri = pickLogoUri(doc.getString("providerLogoUri"),
                                 doc.getString("logoUri"));
                         String dateText = formatDate(doc.get("scheduledAt"), doc.get("createdAt"));
                         long sortTimestamp = pickSortTimestamp(doc.get("scheduledAt"), doc.get("createdAt"));
-                        items.add(new BookingHistoryItem(
+                        historyItems.add(new BookingHistoryItem(
                                 bookingId,
                                 title,
                                 dateText,
@@ -125,14 +163,88 @@ public class HistoryActivity extends AppCompatActivity {
                                 sortTimestamp
                         ));
                     });
-                    items.sort((a, b) -> Long.compare(b.sortTimestamp, a.sortTimestamp));
-                    adapter.notifyDataSetChanged();
-                    tvEmpty.setVisibility(items.isEmpty() ? android.view.View.VISIBLE : android.view.View.GONE);
+                    historyItems.sort((a, b) -> Long.compare(b.sortTimestamp, a.sortTimestamp));
+                    historyAdapter.notifyDataSetChanged();
+                    if (showingHistory) {
+                        tvEmpty.setText("No bookings yet.");
+                        tvEmpty.setVisibility(historyItems.isEmpty() ? View.VISIBLE : View.GONE);
+                    }
                 })
                 .addOnFailureListener(e -> {
                     tvEmpty.setText("Unable to load history: " + e.getMessage());
-                    tvEmpty.setVisibility(android.view.View.VISIBLE);
+                    tvEmpty.setVisibility(View.VISIBLE);
                 });
+    }
+
+    private void loadReviews() {
+        if (user == null) {
+            return;
+        }
+        FirebaseFirestore.getInstance()
+                .collection("bookings")
+                .whereEqualTo("userId", user.getUid())
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    reviewItems.clear();
+                    snapshot.getDocuments().forEach(doc -> {
+                        Integer rating = readRating(doc.get("userRating"));
+                        if (rating == null || rating <= 0) {
+                            return;
+                        }
+                        String bookingId = doc.getId();
+                        String providerName = doc.getString("providerName");
+                        if (TextUtils.isEmpty(providerName)) {
+                            providerName = "Provider";
+                        }
+                        String providerId = doc.getString("providerId");
+                        String providerAddress = doc.getString("providerAddress");
+                        String serviceCategory = doc.getString("serviceCategory");
+                        String userReviewText = doc.getString("userReviewText");
+                        String logoUri = pickLogoUri(doc.getString("providerLogoUri"),
+                                doc.getString("logoUri"));
+                        long sortTs = pickSortTimestamp(doc.get("userRatedAt"), doc.get("createdAt"));
+                        reviewItems.add(new UserReviewItem(
+                                bookingId,
+                                providerId,
+                                providerName,
+                                providerAddress,
+                                serviceCategory,
+                                rating,
+                                userReviewText,
+                                logoUri,
+                                sortTs
+                        ));
+                    });
+                    reviewItems.sort((a, b) -> Long.compare(b.sortTimestamp, a.sortTimestamp));
+                    reviewAdapter.notifyDataSetChanged();
+                    if (!showingHistory) {
+                        tvEmpty.setText("You have not reviewed any providers yet.");
+                        tvEmpty.setVisibility(reviewItems.isEmpty() ? View.VISIBLE : View.GONE);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    tvEmpty.setText("Unable to load reviews: " + e.getMessage());
+                    tvEmpty.setVisibility(View.VISIBLE);
+                });
+    }
+
+    private static Integer readRating(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof Long) {
+            return ((Long) raw).intValue();
+        }
+        if (raw instanceof Integer) {
+            return (Integer) raw;
+        }
+        if (raw instanceof Double) {
+            return ((Double) raw).intValue();
+        }
+        if (raw instanceof Number) {
+            return ((Number) raw).intValue();
+        }
+        return null;
     }
 
     private String displayStatus(String raw) {
@@ -176,20 +288,6 @@ public class HistoryActivity extends AppCompatActivity {
         return TextUtils.isEmpty(value) ? "N/A" : value;
     }
 
-    private boolean matchesFilter(String status, String filter) {
-        if (TextUtils.isEmpty(filter) || "all".equalsIgnoreCase(filter)) {
-            return true;
-        }
-        String normalizedStatus = status == null ? "" : status.replace("_", " ").trim().toLowerCase(Locale.US);
-        String normalizedFilter = filter.replace("_", " ").trim().toLowerCase(Locale.US);
-        if ("on process".equals(normalizedFilter)) {
-            return normalizedStatus.equals("on process")
-                    || normalizedStatus.equals("on-process")
-                    || normalizedStatus.equals("ongoing");
-        }
-        return normalizedStatus.equals(normalizedFilter);
-    }
-
     private String formatDate(Object scheduledAt, Object createdAt) {
         Date date = toDate(scheduledAt);
         if (date == null) {
@@ -207,6 +305,9 @@ public class HistoryActivity extends AppCompatActivity {
         }
         if (value instanceof Long) {
             return new Date((Long) value);
+        }
+        if (value instanceof Date) {
+            return (Date) value;
         }
         return null;
     }

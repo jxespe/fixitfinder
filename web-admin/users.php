@@ -1,9 +1,29 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . "/includes/auth.php";
+require_once __DIR__ . "/includes/firebase.php";
 require_login();
 
-$users = $pdo->query("SELECT * FROM users ORDER BY id ASC")->fetchAll();
+$users = [];
+$usingFirestore = false;
+try {
+    $firestoreUsers = firestore_list_collection('users', 'createdAt');
+    if (!empty($firestoreUsers)) {
+        foreach ($firestoreUsers as $user) {
+            $users[] = [
+                'id' => $user['id'] ?? '',
+                'full_name' => $user['fullName'] ?? ($user['name'] ?? 'User'),
+            ];
+        }
+        $usingFirestore = true;
+    }
+} catch (RuntimeException $e) {
+    $usingFirestore = false;
+}
+
+if (!$usingFirestore) {
+    $users = $pdo->query("SELECT * FROM users ORDER BY id ASC")->fetchAll();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -70,7 +90,10 @@ $users = $pdo->query("SELECT * FROM users ORDER BY id ASC")->fetchAll();
         <div class="card">
           <div class="users-grid">
             <?php foreach ($users as $user) : ?>
-            <a href="./user-detail.php?id=<?php echo (int) $user['id']; ?>" class="user-avatar">
+            <a
+              href="./user-detail.php?<?php echo $usingFirestore ? 'uid=' . urlencode((string) $user['id']) : 'id=' . (int) $user['id']; ?>"
+              class="user-avatar"
+            >
               <?php echo htmlspecialchars(get_initials($user['full_name']), ENT_QUOTES); ?>
             </a>
             <?php endforeach; ?>

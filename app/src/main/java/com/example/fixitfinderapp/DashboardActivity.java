@@ -8,8 +8,12 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -20,13 +24,26 @@ import com.example.fixitfinderapp.notifications.ReminderScheduler;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.firestore.Query;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.MapsInitializer;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+import android.location.Address;
+import android.location.Geocoder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
-public class DashboardActivity extends AppCompatActivity {
+public class DashboardActivity extends BaseSwipeActivity implements OnMapReadyCallback {
 
+    private static final int REQ_NOTIFICATIONS = 1102;
     private TextView tvNewServicesTitle;
     private TextView tvNewServicesCount;
     private TextView tvUpcomingServicesTitle;
@@ -35,6 +52,11 @@ public class DashboardActivity extends AppCompatActivity {
     private ProviderServiceAdapter serviceAdapter;
     private int pendingCount = 0;
     private int upcomingCount = 0;
+    private GoogleMap providerMap;
+    private Double providerLat;
+    private Double providerLng;
+    private String providerAddress;
+    private String providerName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +67,8 @@ public class DashboardActivity extends AppCompatActivity {
         ImageView ivCompanyLogo = findViewById(R.id.ivCompanyLogo);
         TextView tvCompanyName = findViewById(R.id.tvCompanyName);
         TextView tvVerifiedStatus = findViewById(R.id.tvVerifiedStatus);
+        tvVerifiedStatus.setOnClickListener(v ->
+                startActivity(new Intent(this, ProviderDocumentsActivity.class)));
         TextView tvWhyReason = findViewById(R.id.tvWhyReason);
         TextView tvLocation = findViewById(R.id.tvLocation);
         TextView tvTotalBookings = findViewById(R.id.tvTotalBookings);
@@ -59,6 +83,13 @@ public class DashboardActivity extends AppCompatActivity {
 
         setupServicesRecycler(recyclerViewServices);
 
+        SupportMapFragment mapFragment =
+                (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.mapProvider);
+        if (mapFragment != null) {
+            MapsInitializer.initialize(getApplicationContext());
+            mapFragment.getMapAsync(this);
+        }
+
         if (user != null) {
             FirebaseFirestore.getInstance()
                     .collection("providers")
@@ -69,6 +100,11 @@ public class DashboardActivity extends AppCompatActivity {
                         String logoUri = doc.getString("logoUri");
                         String reason = doc.getString("whyChooseUs");
                         String address = doc.getString("address");
+                        providerAddress = address;
+                        providerName = companyName;
+                        providerLat = doc.getDouble("lat");
+                        providerLng = doc.getDouble("lng");
+                        updateProviderMap();
                         Boolean verified = doc.getBoolean("verified");
                         Boolean serviceActive = doc.getBoolean("serviceActive");
 
@@ -90,7 +126,7 @@ public class DashboardActivity extends AppCompatActivity {
                         }
                         updateServiceStatusButton(btnServiceStatus, serviceActive != null && serviceActive);
                         if (!TextUtils.isEmpty(logoUri)) {
-                            ImageLoader.load(ivCompanyLogo, logoUri, android.R.drawable.ic_menu_myplaces);
+                            ImageLoader.loadProfile(ivCompanyLogo, logoUri, android.R.drawable.ic_menu_myplaces);
                         }
                     });
         }
@@ -129,6 +165,10 @@ public class DashboardActivity extends AppCompatActivity {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) {
             ReminderScheduler.scheduleProviderAcceptedReminders(this, user.getUid());
+            requestNotificationPermission();
+            com.google.android.material.bottomnavigation.BottomNavigationView bottomNavigation =
+                    findViewById(R.id.bottomNavigation);
+            NavigationHelper.updateMessageBadge(this, bottomNavigation);
         }
     }
 
@@ -279,7 +319,7 @@ public class DashboardActivity extends AppCompatActivity {
         }
         recyclerViewServices.setLayoutManager(
                 new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
-        serviceAdapter = new ProviderServiceAdapter(services, false, false, null);
+        serviceAdapter = new ProviderServiceAdapter(services, false, false, null, null);
         recyclerViewServices.setAdapter(serviceAdapter);
     }
 
@@ -310,5 +350,100 @@ public class DashboardActivity extends AppCompatActivity {
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "Failed to load services: " + e.getMessage(),
                                 Toast.LENGTH_LONG).show());
+    }
+
+    @Override
+    public void onMapReady(GoogleMap map) {
+        providerMap = map;
+        updateProviderMap();
+    }
+
+    private void updateProviderMap() {
+        if (providerMap == null) {
+            return;
+        }
+        LatLng fallbackCenter = new LatLng(14.5995, 120.9842);
+        providerMap.moveCamera(CameraUpdateFactory.newLatLngZoom(fallbackCenter, 12f));
+        if (providerLat != null && providerLng != null) {
+            LatLng pos = new LatLng(providerLat, providerLng);
+            providerMap.clear();
+            providerMap.addMarker(new MarkerOptions().position(pos).title(
+                    !TextUtils.isEmpty(providerName) ? providerName : "Provider"));
+            providerMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 14f));
+            return;
+        }
+        if (!TextUtils.isEmpty(providerAddress)) {
+            geocodeAddress(providerAddress);
+        }
+    }
+
+    private void geocodeAddress(String address) {
+        new Thread(() -> {
+            LatLng result = null;
+            try {
+                Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+                List<Address> results = geocoder.getFromLocationName(address, 1);
+                if (results != null && !results.isEmpty()) {
+                    Address addr = results.get(0);
+                    result = new LatLng(addr.getLatitude(), addr.getLongitude());
+                }
+            } catch (Exception ignored) { }
+            LatLng finalResult = result;
+            runOnUiThread(() -> {
+                if (providerMap == null || finalResult == null) {
+                    return;
+                }
+                providerMap.clear();
+                providerMap.addMarker(new MarkerOptions().position(finalResult).title(
+                        !TextUtils.isEmpty(providerName) ? providerName : "Provider"));
+                providerMap.animateCamera(CameraUpdateFactory.newLatLngZoom(finalResult, 14f));
+            });
+        }).start();
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            refreshFcmToken();
+            return;
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                == PackageManager.PERMISSION_GRANTED) {
+            refreshFcmToken();
+            return;
+        }
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                REQ_NOTIFICATIONS);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String[] permissions,
+                                           int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQ_NOTIFICATIONS
+                && grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            refreshFcmToken();
+        }
+    }
+
+    private void refreshFcmToken() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+            return;
+        }
+        FirebaseMessaging.getInstance().getToken()
+                .addOnSuccessListener(token -> {
+                    if (TextUtils.isEmpty(token)) {
+                        return;
+                    }
+                    java.util.Map<String, Object> data = new java.util.HashMap<>();
+                    data.put("fcmToken", token);
+                    FirebaseFirestore.getInstance()
+                            .collection("providers")
+                            .document(user.getUid())
+                            .set(data, SetOptions.merge());
+                });
     }
 }
